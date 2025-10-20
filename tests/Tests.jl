@@ -5,7 +5,7 @@ export run
 using Test 
 using GeometryBasics
 
-using MorphoMol
+using MorFit
 
 include("test_morphometric_approach.jl")
 include("test_interface.jl")

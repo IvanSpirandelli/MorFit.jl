@@ -11,14 +11,14 @@ end
 
 function test_previous_error_calls()
     x_flat = [1.8719770104797722, -0.8054259756520944, 2.264161853094224, 64.04252455563663, 47.88893314398397, 31.29679809443243, 3.7196395887896667, 1.3234238947069903, 0.5481448529951869, 74.26445359430221, 43.84510418286682, 80.91055320912551]
-    x = MorphoMol.Utilities.convert_flat_state_to_tuples(x_flat)
+    x = MorFit.Utilities.convert_flat_state_to_tuples(x_flat)
     input = get_input(2)
     fsol_e, _, cc_fsol_e, _ = get_energy_calls(input)
 
     e1, m1 = fsol_e(x)
     @assert m1["OLs"] > 0.0
     e2, m2 = cc_fsol_e(x)
-    are_overlapping = MorphoMol.Energies.are_bounding_spheres_overlapping(x, 1, 2, MorphoMol.Energies.get_bounding_radii(input["template_centers"], input["template_radii"], input["rs"]))
+    are_overlapping = MorFit.Energies.are_bounding_spheres_overlapping(x, 1, 2, MorFit.Energies.get_bounding_radii(input["template_centers"], input["template_radii"], input["rs"]))
     @assert are_overlapping
     @assert e1 == e2 
     @assert existing_values_equal(m1, m2)
@@ -28,7 +28,7 @@ function test_energy_calls()
     n_mol = 2
     input = get_input(n_mol)
     fsol_e, twasp_e, cc_fsol_e, cc_fsol_twasp_e = get_energy_calls(input)
-    x = MorphoMol.Utilities.get_initial_state(n_mol, input["bounds"])
+    x = MorFit.Utilities.get_initial_state(n_mol, input["bounds"])
 
     e1, m1 = fsol_e(x)
     e2, m2 = twasp_e(x)
@@ -46,13 +46,13 @@ function test_energy_calls()
     n_mol = 3
     input = get_input(n_mol)
     fsol_e, twasp_e, cc_fsol_e, cc_fsol_twasp_e = get_energy_calls(input)
-    x = MorphoMol.Utilities.get_initial_state(n_mol, input["bounds"])
+    x = MorFit.Utilities.get_initial_state(n_mol, input["bounds"])
 
     e1, m1 = fsol_e(x)
     e2, m2 = twasp_e(x)
 
-    bol_nmol_l = (x, id1, id2) -> MorphoMol.Energies.are_bounding_spheres_overlapping(x, id1, id2, MorphoMol.Energies.get_bounding_radii(input["template_centers"], input["template_radii"], input["rs"]))
-    icc = MorphoMol.Energies.get_initial_connected_component_energies(x, input["template_centers"], input["template_radii"], input["rs"], input["prefactors"], input["overlap_jump"], input["overlap_slope"], input["delaunay_eps"], bol_nmol_l)
+    bol_nmol_l = (x, id1, id2) -> MorFit.Energies.are_bounding_spheres_overlapping(x, id1, id2, MorFit.Energies.get_bounding_radii(input["template_centers"], input["template_radii"], input["rs"]))
+    icc = MorFit.Energies.get_initial_connected_component_energies(x, input["template_centers"], input["template_radii"], input["rs"], input["prefactors"], input["overlap_jump"], input["overlap_slope"], input["delaunay_eps"], bol_nmol_l)
     
     e3, m3 = cc_fsol_twasp_e(icc, 1, x)
     @test 0.5*(e1 + e2) ≈ e3
@@ -103,11 +103,11 @@ function get_input(n_mol::Int)
     persistence_weights = [1.0, -1.0, -1.0]
 
     mol_type = "6r7m"
-    template_centers = MorphoMol.TEMPLATES[mol_type]["template_centers"]
-    template_radii = MorphoMol.TEMPLATES[mol_type]["template_radii"]
+    template_centers = MorFit.TEMPLATES[mol_type]["template_centers"]
+    template_radii = MorFit.TEMPLATES[mol_type]["template_radii"]
     
-    prefactors = MorphoMol.Energies.get_prefactors(rs, η)
-    x = MorphoMol.Utilities.get_initial_state(n_mol, bounds)
+    prefactors = MorFit.Energies.get_prefactors(rs, η)
+    x = MorFit.Utilities.get_initial_state(n_mol, bounds)
 
     input = Dict(
             "algorithm" => algorithm,
@@ -143,13 +143,13 @@ end
 
 function get_energy_calls(input)
     input["energy"] = "fsol"
-    fsol_e = MorphoMol.get_energy(input)
+    fsol_e = MorFit.get_energy(input)
     input["energy"] = "twasp"
-    twasp_e = MorphoMol.get_energy(input)
+    twasp_e = MorFit.get_energy(input)
     input["energy"] = "cc_fsol"
-    cc_fsol_e = MorphoMol.get_energy(input)
+    cc_fsol_e = MorFit.get_energy(input)
     input["energy"] = "cc_fsol_twasp_interpolated"
-    cc_fsol_twasp_e = MorphoMol.get_energy(input)
+    cc_fsol_twasp_e = MorFit.get_energy(input)
 
     return fsol_e, twasp_e, cc_fsol_e, cc_fsol_twasp_e
 end
