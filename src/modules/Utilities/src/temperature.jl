@@ -15,7 +15,7 @@ function get_initial_temperature(input; n_samples=1000, scaling = 0.1)
     energy = get_energy(input)
     n_mol = input["n_mol"]
     bounds = input["bounds"]
-    test_Es = [energy(MorphoMol.get_initial_state(n_mol, bounds))[1] for i in 1:n_samples]
+    test_Es = [energy(get_initial_state(n_mol, bounds))[1] for i in 1:n_samples]
     test_Es = [e - minimum(test_Es) for e in test_Es]
     sum(test_Es) / length(test_Es) * scaling
 end
