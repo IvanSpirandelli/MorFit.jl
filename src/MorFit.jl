@@ -1,4 +1,4 @@
-module MorphoMol
+module MorFit
 using Rotations
 # Modules
 include("modules/Utilities/src/Utilities.jl")
@@ -16,4 +16,4 @@ include("simulation_setup.jl")
 # Tests
 include("../tests/Tests.jl")
 
-end #module MorphoMol
+end #module MorFit
