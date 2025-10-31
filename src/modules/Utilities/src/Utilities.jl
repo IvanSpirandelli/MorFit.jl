@@ -5,6 +5,7 @@ module Utilities
     using Distributions
     using GeometryBasics
 
+    include("center_of_mass_computation.jl")
     include("configuration_distances.jl")
     include("initialization.jl")
     include("perturbation.jl")

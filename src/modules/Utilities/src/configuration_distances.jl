@@ -253,6 +253,36 @@ function get_rmsd_align_one_of_pair(
     return [min(rmsd_A, rmsd_B)]
 end
 
+
+
+function get_global_rmsd_of_target_inhibitor_pair(
+    templates_sim::Vector{Matrix{Float64}}, templates_ref::Vector{Matrix{Float64}},
+    state_sim::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    state_ref::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
+)
+    #@assert false "Still needs to be implemented. Handleing the Vector data input"
+
+    sim_target_state = state_sim[1]
+    sim_inhib_state = state_sim[2]
+    ref_target_state = state_ref[1]
+    ref_inhib_state = state_ref[2]
+
+    coords_W = get_point_vector_realization([sim_target_state], templates_sim[1])
+    coords_X = get_point_vector_realization([sim_inhib_state], templates_sim[2])
+    coords_Y = get_point_vector_realization([ref_target_state], templates_ref[1])
+    coords_Z = get_point_vector_realization([ref_inhib_state], templates_ref[2])
+
+    mobile = [coords_W; coords_X]
+    reference = [coords_Y; coords_Z]
+
+    (R,t) = _find_superposition_transform(mobile, reference)
+
+    k = length(mobile)
+    sq_err = sum(norm((R * mobile[i] + t) - reference[i])^2 for i in 1:k)
+    return sqrt(sq_err / k)
+end
+
+
 function get_rmsd_for_fixed_target_inhibitor_pair(
     templates_sim::Vector{Matrix{Float64}}, templates_ref::Vector{Matrix{Float64}},
     state_sim::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
