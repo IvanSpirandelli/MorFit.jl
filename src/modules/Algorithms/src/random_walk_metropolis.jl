@@ -17,7 +17,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
     add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < simulation_time_minutes && total_step_attempts < target_iterations
+    while current_running_time < simulation_time_minutes && total_step_attempts <= target_iterations
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
