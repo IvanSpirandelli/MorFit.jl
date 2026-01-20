@@ -11,7 +11,8 @@ const ATOMIC_MASSES = Dict{String, Float64}(
     "FE" => 55.845,
     "ZN" => 65.38,
     "MG" => 24.305,
-    "CA" => 40.078
+    "CA" => 40.078,
+    "CL" => 35.45,
 )
 
 function get_center_of_mass(coordinates::Vector{Vector{Float64}}, elements::Vector{String})

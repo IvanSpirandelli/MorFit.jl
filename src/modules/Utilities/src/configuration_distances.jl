@@ -31,8 +31,6 @@ function get_metric_to_ground_truth(metric_func::Function, n_mol::Int, mol_type:
     end
 end
 
-get_theta_to_ground_truth(n_mol::Int, mol_type::String, sim_templates, state) = get_metric_to_ground_truth(get_theta_of_pair, n_mol, mol_type, sim_templates, state)
-get_screw_axis_distance_to_ground_truth(n_mol::Int, mol_type::String, sim_templates, state; λ_dist=0.1) = get_metric_to_ground_truth(get_screw_axis_distance_of_pair, n_mol, mol_type, sim_templates, state; λ_dist=λ_dist)
 get_rmsd_align_one_to_ground_truth(n_mol::Int, mol_type::String, sim_templates, state) = get_metric_to_ground_truth(get_rmsd_align_one_of_pair, n_mol, mol_type, sim_templates, state)
 
 """
@@ -53,8 +51,6 @@ function get_min_metric(metric_func::Function, input::Dict{String, Any}, output:
     get_metric_to_ground_truth(metric_func, n_mol, mol_type, sim_templates, min_energy_state; metric_kwargs...)
 end
 
-get_min_theta(input, output) = get_min_metric(get_theta_of_pair, input, output)
-get_min_screw_axis_distance(input, output; λ_dist=0.1) = get_min_metric(get_screw_axis_distance_of_pair, input, output; λ_dist=λ_dist)
 get_min_rmsd_align_one(input, output) = get_min_metric(get_rmsd_align_one_of_pair, input, output)
 
 function get_min_metric_cut_off(metric_func::Function, input::Dict{String, Any}, output::Dict{String, Vector}, cutoff_index::Int; metric_kwargs...)
@@ -71,8 +67,6 @@ function get_min_metric_cut_off(metric_func::Function, input::Dict{String, Any},
     get_metric_to_ground_truth(metric_func, n_mol, mol_type, sim_templates, min_energy_state; metric_kwargs...)
 end
 
-get_min_theta_cut_off(input, output, cutoff_index) = get_min_metric_cut_off(get_theta_of_pair, input, output, cutoff_index)
-get_min_screw_axis_distance_cut_off(input, output, cutoff_index; λ_dist=0.1) = get_min_metric_cut_off(get_screw_axis_distance_of_pair, input, output, cutoff_index; λ_dist=λ_dist)
 get_min_rmsd_align_one_cut_off(input, output, cutoff_index) = get_min_metric_cut_off(get_rmsd_align_one_of_pair, input, output, cutoff_index)
 
 
@@ -124,90 +118,6 @@ function get_configuration_distance(
     return min_sum / length(pairings)
 end
 
-function get_theta_of_pair(
-    template_centers_a::Matrix{Float64}, template_centers_b::Matrix{Float64},
-    state_a::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    state_b::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    subset_a::Vector{Int}, subset_b::Vector{Int}
-)
-    # This nested helper correctly uses a specific template with its corresponding state
-    function transform_dist(template_centers, state, ss, idx)
-        i, j = ss[1], ss[2]
-        R1, T1 = state[i]
-        R2, T2 = state[j]
-        return euclidean(T1 + R1 * template_centers[:,idx], T2 + R2 * template_centers[:,idx])
-    end
-    
-    return [abs(transform_dist(template_centers_a, state_a, subset_a, i) - transform_dist(template_centers_b, state_b, subset_b, i)) for i in 1:size(template_centers_a, 2)]
-end
-
-"""
-Calculates the distance between two molecular pairs based on their relative screw motion.
-
-The process is:
-1.  Calculate the relative transformation (rotation and translation) for the pair in `state_a`.
-2.  Calculate the relative transformation for the corresponding pair in `state_b`.
-3.  Decompose each transformation into its screw axis parameters: rotation angle `θ` and
-    translation along the axis `d`.
-4.  Compute the final distance as the Euclidean distance in the weighted parameter space:
-    `sqrt((θ_sim - θ_ref)^2 + (λ_dist * (d_sim - d_ref))^2)`.
-    The `λ_dist` parameter weights the importance of translational vs. rotational differences.
-"""
-function get_screw_axis_distance_of_pair(
-    templates_a::Matrix{Float64}, templates_b::Matrix{Float64}, # Unused, for signature compatibility
-    state_a::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    state_b::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    subset_a::Vector{Int}, subset_b::Vector{Int};
-    λ_dist::Float64 = 0.1
-)
-    # --- Helper to get relative motion ---
-    function get_diff_motion(state)
-        R1, t1 = state[1]; R2, t2 = state[2]
-        return R1' * R2, R1' * (t2 - t1)
-    end
-    
-    # --- helper to calculate screw parameters from a single relative motion ---
-    function get_screw_params(R_diff, t_diff)
-        # Angle of rotation
-        # Clamp argument to acos to prevent domain errors from floating point inaccuracies
-        θ = acos(clamp((tr(R_diff) - 1) / 2, -1.0, 1.0))
-
-        # Handle the pure translation case (no rotation)
-        if isapprox(θ, 0.0, atol=1e-8)
-            # For pure translation, the "axis" is undefined, and the translation
-            # along the axis is simply the magnitude of the translation vector.
-            return 0.0, norm(t_diff)
-        end
-
-        # For rotation, find the screw axis and the translation along it
-        axis = [R_diff[3, 2] - R_diff[2, 3], R_diff[1, 3] - R_diff[3, 1], R_diff[2, 1] - R_diff[1, 2]] / (2 * sin(θ))
-        d = dot(axis, t_diff) # Translation component parallel to the axis
-        
-        return θ, d
-    end
-
-    # --- Main logic ---
-
-    # 1. Use the subsets to extract the specific pair from the full state
-    sim_pair_state = [state_a[subset_a[1]], state_a[subset_a[2]]]
-    ref_pair_state = [state_b[subset_b[1]], state_b[subset_b[2]]]
-
-    # 2. Get the relative motion for both the simulation and reference pairs
-    R_sim, t_sim = get_diff_motion(sim_pair_state)
-    R_ref, t_ref = get_diff_motion(ref_pair_state)
-    
-    # 3. Calculate the screw parameters (θ, d) for each motion
-    θ_sim, d_sim = get_screw_params(R_sim, t_sim)
-    θ_ref, d_ref = get_screw_params(R_ref, t_ref)
-
-    # 4. Calculate the weighted Euclidean distance between the (θ, d) parameter pairs
-    #    This is the core fix: actually comparing sim vs. ref.
-    distance = sqrt((θ_sim - θ_ref)^2 + (λ_dist * (d_sim - d_ref))^2)
-
-    # Return as a single-element vector to work with the `mean` call in the master function
-    return [distance]
-end
-
 function _find_superposition_transform(mobile, ref)
     c_mob = mean(mobile); c_ref = mean(ref)
     X = hcat([p .- c_mob for p in mobile]...); Y = hcat([p .- c_ref for p in ref]...)
@@ -253,8 +163,6 @@ function get_rmsd_align_one_of_pair(
     return [min(rmsd_A, rmsd_B)]
 end
 
-
-
 function get_global_rmsd_of_target_inhibitor_pair(
     templates_sim::Vector{Matrix{Float64}}, templates_ref::Vector{Matrix{Float64}},
     state_sim::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
@@ -288,8 +196,6 @@ function get_rmsd_for_fixed_target_inhibitor_pair(
     state_sim::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
     state_ref::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
 )
-    #@assert false "Still needs to be implemented. Handleing the Vector data input"
-
     sim_target_state = state_sim[1]
     sim_inhib_state = state_sim[2]
     ref_target_state = state_ref[1]
@@ -303,14 +209,3 @@ function get_rmsd_for_fixed_target_inhibitor_pair(
     return _calculate_driven_rmsd(coords_W, coords_X, coords_Y, coords_Z)
 end
 
-# These methods simply convert the flat vectors to tuples
-
-function get_theta_of_pair(
-    template_centers_a::Matrix{Float64}, template_centers_b::Matrix{Float64},
-    state_a::Vector{Float64}, state_b::Vector{Float64},
-    subset_a::Vector{Int}, subset_b::Vector{Int}
-)
-    state_a_tuples = convert_flat_state_to_tuples(state_a)
-    state_b_tuples = convert_flat_state_to_tuples(state_b)
-    return get_theta_of_pair(template_centers_a, template_centers_b, state_a_tuples, state_b_tuples, subset_a, subset_b)
-end
