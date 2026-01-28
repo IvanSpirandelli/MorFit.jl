@@ -91,6 +91,8 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     if length(output["states"]) == 0
         @assert "This method expects to have proper simulation output."
     end
+    
+    println("Resuming Random Walk Metropolis simulation with given input and output dictionaries.")
 
     energy = algorithm.energy
     perturbation = algorithm.perturbation
