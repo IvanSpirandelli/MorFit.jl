@@ -106,7 +106,7 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     total_step_attempts = output["total_step_attempts"][1]
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < input["simulation_time_minutes"] && total_step_attempts < input["target_iterations"]
+    while current_running_time < input["simulation_time_minutes"] && total_step_attempts <= input["target_iterations"]
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
