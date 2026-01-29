@@ -17,7 +17,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
     add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < simulation_time_minutes && total_step_attempts <= target_iterations
+    while current_running_time < simulation_time_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
@@ -91,8 +91,6 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     if length(output["states"]) == 0
         @assert "This method expects to have proper simulation output."
     end
-    
-    println("Resuming Random Walk Metropolis simulation with given input and output dictionaries.")
 
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -106,7 +104,7 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     total_step_attempts = output["total_step_attempts"][1]
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < input["simulation_time_minutes"] && total_step_attempts <= input["target_iterations"]
+    while current_running_time < input["simulation_time_minutes"] && total_step_attempts < input["target_iterations"]
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
