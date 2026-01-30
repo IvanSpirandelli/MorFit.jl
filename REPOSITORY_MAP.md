@@ -147,7 +147,6 @@ These are large data files embedded as Julia code:
 5. **Readme.md empty** - Just contains header
 6. **.DS_Store files** - macOS metadata scattered around
 7. **test_interface.jl** - Contains commented/legacy tests
-8. **PyCall dependency** - Unclear what Python code is being called
 
 ---
 
@@ -191,7 +190,7 @@ rm Manifest.toml
 - `Graphs` - Graph algorithms
 - `PDBTools` - PDB file handling
 
-**Question:** Is PyCall actually needed? What Python code does it call?
+**Note:** PyCall is required for `alpha_shape_diagrams.jl` - computes alpha shape diagrams via Python.
 
 ---
 
@@ -217,8 +216,73 @@ Before cleanup, decide:
 - [x] If keeping examples, update to use "MorFit"? - N/A (deleted)
 - [x] Remove `Manifest.toml` from git? - DONE
 - [ ] Keep template data as .jl files or convert to .jld2?
-- [ ] What is PyCall used for - keep or remove?
+- [x] What is PyCall used for - keep or remove? - KEEP (alpha_shape_diagrams.jl)
 - [ ] Add proper documentation to Readme.md?
+
+---
+
+## HPC_MorFit Dependency Analysis
+
+The `../HPC_MorFit` repository is an HPC framework for running molecular simulations and Bayesian optimization. It depends on MorFit.jl for core functionality.
+
+### Files Using MorFit
+
+| File | Usage Level |
+|------|-------------|
+| `julia_scripts/start_simulations.jl` | Heavy - core simulation runner |
+| `gaussian_process/objective_function.jl` | Light - RMSD calculations |
+| `gaussian_process/batch_launcher.jl` | Import only |
+
+### Required MorFit Functions
+
+**From `MorFit` (top-level):**
+- `get_initialization(input, flag)` - Initialize molecular assembly
+- `get_energy(input)` - Get energy calculation function
+- `get_perturbation(input)` - Get perturbation function for MC moves
+- `are_bounding_spheres_overlapping(x, id1, id2, radius)` - Collision detection
+- `get_bounding_radius(centers, radii, rs)` - Bounding sphere calculation
+- `get_initial_connected_component_energies(...)` - Multi-molecule energy init
+
+**From `MorFit.Algorithms`:**
+- `RandomWalkMetropolis(energy, perturbation, β)` - Standard RWM sampler
+- `ConnectedComponentRandomWalkMetropolis(...)` - RWM for n_mol > 2
+- `simulate!(rwm, x_init, time_minutes, target_iters, output)` - Run simulation
+
+**From `MorFit.Energies`:**
+- `get_prefactors(rs, η)` - Energy prefactors from radii and packing fraction
+
+**From `MorFit.Utilities`:**
+- `get_center_of_mass(points, elements)` - Center of mass calculation
+- `get_rmsd_for_fixed_target_inhibitor_pair(...)` - RMSD with fixed alignment
+
+**Global Data Accessed:**
+- `MorFit.TEMPLATES[mol_id]["template_centers"]` - Molecular template coordinates
+- `MorFit.TEMPLATES[mol_id]["template_radii"]` - Molecular template radii
+- `MorFit.PROTEIN_LIGAND_DATA[id]["protein"]["centers"]` - Protein coordinates
+- `MorFit.PROTEIN_LIGAND_DATA[id]["protein"]["radii"]` - Protein radii
+- `MorFit.PROTEIN_LIGAND_DATA[id]["protein"]["elements"]` - Protein elements
+- `MorFit.PROTEIN_LIGAND_DATA[id]["ligand"]["centers"]` - Ligand coordinates
+- `MorFit.PROTEIN_LIGAND_DATA[id]["ligand"]["radii"]` - Ligand radii
+- `MorFit.PROTEIN_LIGAND_DATA[id]["ligand"]["elements"]` - Ligand elements
+
+### Cleanup Implications
+
+**MUST KEEP** for HPC_MorFit compatibility:
+- `src/simulation_setup.jl` - provides `get_initialization`, `get_energy`, `get_perturbation`
+- `src/modules/Algorithms/` - RWM and CC-RWM samplers
+- `src/modules/Energies/src/morphometric_approach/prefactors.jl` - `get_prefactors`
+- `src/modules/Utilities/src/center_of_mass_computation.jl` - `get_center_of_mass`
+- `src/modules/Utilities/src/configuration_distances.jl` - RMSD functions
+- `src/templates/target_and_inhibitor_templates.jl` - `TEMPLATES` dict
+- `src/templates/protein_ligand_data.jld2` - `PROTEIN_LIGAND_DATA`
+
+**Potentially removable** (not used by HPC_MorFit):
+- `src/modules/Energies/src/persistence_computations.jl`
+- `src/modules/Energies/src/alpha_shapes/` (unless used by energy functions)
+- `src/templates/experimental_assembly.jl`
+- `src/templates/asymmetric_unit_templates.jl`
+- `src/modules/Algorithms/src/simulated_annealing.jl`
+- `src/modules/Algorithms/src/hamiltonian_monte_carlo.jl`
 
 ---
 
@@ -233,3 +297,7 @@ _Track all cleanup actions here:_
 | 2026-01-30 | Deleted | All `.DS_Store` files |
 | 2026-01-30 | Deleted | `Manifest.toml` |
 | 2026-01-30 | Deleted | `examples/` - 4 outdated notebooks using old module name |
+| 2026-01-30 | Documented | HPC_MorFit dependency analysis - identified required functions |
+| 2026-01-30 | Refactored | **Unified sta/ppii data formats** - Both assembly types now use list format: `template_centers::Vector{Matrix{Float64}}`, `template_radii::Vector{Vector{Float64}}`. For sta, this is n_mol copies of the same template. Changes: HPC `_get_template_centers_and_radii`, MorFit `_get_realization_radii_and_sizes`, added Vector overloads in `connected_component_calculations.jl` |
+| 2026-01-30 | Deleted | `hamiltonian_monte_carlo.jl` and `simulated_annealing.jl` - Unused algorithms |
+| 2026-01-30 | Deleted | All old Matrix{Float64} format overloads from `connected_component_calculations.jl`, `realizations.jl`, `solvation_free_energy.jl` - Only unified Vector{Matrix} format remains |

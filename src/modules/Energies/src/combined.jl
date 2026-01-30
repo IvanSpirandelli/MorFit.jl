@@ -93,7 +93,8 @@ function calculate_combined_potential(
     !in_bounds(x, bounds) && return Inf, Dict{String, Any}(), ccs
 
     # 1. Compute total alpha shape persistence
-    radii = vcat([template_radii for _ in 1:length(x)]...)
+    # Flatten template_radii (list of vectors) to single flat vector for alpha shape computation
+    radii = vcat(template_radii...)
     tasp, tasp_measures = compute_total_alpha_shape_persistence(x, template_centers, radii, persistence_weights, exact_delaunay, compute_weighted)
 
     # 2. Compute solvation free energy for the connected components

@@ -103,9 +103,14 @@ function get_input(n_mol::Int)
     persistence_weights = [1.0, -1.0, -1.0]
 
     mol_type = "6r7m"
-    template_centers = MorFit.TEMPLATES[mol_type]["template_centers"]
-    template_radii = MorFit.TEMPLATES[mol_type]["template_radii"]
-    
+    # Convert to unified list format (same format as HPC uses)
+    raw_centers = MorFit.TEMPLATES[mol_type]["template_centers"]
+    raw_radii = MorFit.TEMPLATES[mol_type]["template_radii"]
+    n_atoms_per_mol = length(raw_centers) ÷ 3
+    single_template = reshape(raw_centers, (3, n_atoms_per_mol))
+    template_centers = [single_template for _ in 1:n_mol]
+    template_radii = [raw_radii for _ in 1:n_mol]
+
     prefactors = MorFit.Energies.get_prefactors(rs, η)
     x = MorFit.Utilities.get_initial_state(n_mol, bounds)
 

@@ -1,10 +1,10 @@
 function compute_total_alpha_shape_persistence(
-    x,
-    template_centers,
-    radii,
-    persistence_weights,
-    exact_delaunay,
-    compute_weighted
+    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    template_centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
+    exact_delaunay::Bool,
+    compute_weighted::Bool
     )
     if compute_weighted
         return total_weighted_alpha_shape_persistence_and_measures(x, template_centers, radii, persistence_weights, exact_delaunay)
@@ -21,9 +21,9 @@ function hs_total_alpha_shape_persistence(x::Vector{Float64}, persistence_weight
 end
 
 function total_alpha_shape_persistence_and_measures(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, 
-    template_centers,
-    persistence_weights::Vector{Float64}, 
+    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    template_centers::Vector{Matrix{Float64}},
+    persistence_weights::Vector{Float64},
     exact_delaunay = false
     )
     points = Utilities.get_point_vector_realization(x, template_centers)
@@ -32,19 +32,18 @@ function total_alpha_shape_persistence_and_measures(
     return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
 end
 
-_prepare_radii(radii::Vector{Float64}) = radii
-_prepare_radii(radii::Vector{Vector{Float64}}) = vcat(radii...)
+_flatten_radii(radii::Vector{Vector{Float64}}) = vcat(radii...)
 
 function total_weighted_alpha_shape_persistence_and_measures(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, 
-    template_centers, 
-    radii,            
-    persistence_weights::Vector{Float64}, 
+    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    template_centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
     exact_delaunay = false
     )
     
     points = Utilities.get_point_vector_realization(x, template_centers)
-    flat_radii = _prepare_radii(radii) 
+    flat_radii = _flatten_radii(radii) 
     
     pdgm = get_weighted_alpha_shape_persistence_diagram(points, flat_radii, exact_delaunay)
     
@@ -72,15 +71,15 @@ function _calculate_persistence_energy_and_measures(pdgm, persistence_weights::V
 end
 
 function total_weighted_alpha_shape_persistence(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, 
-    template_centers, 
-    radii,            
-    persistence_weights::Vector{Float64}, 
+    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    template_centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
     exact_delaunay = false
     )
     
     points = Utilities.get_point_vector_realization(x, template_centers)
-    flat_radii = _prepare_radii(radii) 
+    flat_radii = _flatten_radii(radii) 
     
     pdgm = get_weighted_alpha_shape_persistence_diagram(points, flat_radii, exact_delaunay)
     
