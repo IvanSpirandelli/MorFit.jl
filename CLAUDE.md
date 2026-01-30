@@ -4,7 +4,7 @@
 MorFit.jl is a Julia package for molecular fitting using Monte Carlo methods and morphometric energy functions.
 
 ## Key Files
-- `REPOSITORY_MAP.md` - Repository structure reference
+- `ARCHITECTURE.md` - Repository structure reference
 - `src/MorFit.jl` - Package entry point
 - `tests/Tests.jl` - Test runner (`MorFit.Tests.run()`)
 
