@@ -1,9 +1,13 @@
 using Rotations
+using JLD2
 
 function run_configuration_distance_tests()
     @testset verbose = true "Configuration Distances" begin
         @testset verbose = true "Fixed Target-Inhibitor RMSD" begin
             test_fixed_target_inhibitor_rmsd()
+        end
+        @testset verbose = true "Simulation RMSD Calculation" begin
+            test_simulation_rmsd_calculation()
         end
     end
 end
@@ -79,4 +83,39 @@ function test_fixed_target_inhibitor_rmsd()
         templates, templates, state_sim, state_ref
     )
     @test rmsd ≈ 0.0 atol=1e-10
+end
+
+function test_simulation_rmsd_calculation()
+    # Load test simulation file
+    test_file = joinpath(@__DIR__, "test_simulation.jld2")
+    @test isfile(test_file)
+
+    @load test_file input output
+
+    # Extract simulation data
+    molecule_ids = Vector{String}(input["molecule_ids"])
+    templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
+    n_states = length(output["states"])
+
+    @test molecule_ids == ["1a30:protein", "1a30:ligand"]
+    @test n_states == 31
+
+    # Calculate RMSD for all states
+    rmsds = [MorFit.get_rmsd_to_ground_truth(molecule_ids, templates, state)
+             for state in output["states"]]
+
+    # All RMSDs should be finite and positive
+    @test all(isfinite, rmsds)
+    @test all(r -> r > 0, rmsds)
+
+    # Test get_min_rmsd returns the minimum RMSD among all states
+    min_rmsd = MorFit.get_min_rmsd(input, output)
+    min_energy_idx = argmin(output["Es"])
+    @test min_rmsd ≈ rmsds[min_energy_idx]
+
+    # Test get_min_rmsd_cutoff with a cutoff
+    cutoff = output["αs"][15]  # Use iteration of 15th state as cutoff
+    rmsd_cutoff = MorFit.get_min_rmsd_cutoff(input, output, cutoff)
+    @test isfinite(rmsd_cutoff)
+    @test rmsd_cutoff >= minimum(rmsds[1:15])
 end

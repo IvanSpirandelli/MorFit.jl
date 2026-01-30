@@ -50,6 +50,7 @@ function get_rmsd_to_ground_truth(
     state::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
 )
     if !haskey(EXPERIMENTAL_ASSEMBLIES, molecule_ids)
+        @warn "molecule_ids $molecule_ids not found in EXPERIMENTAL_ASSEMBLIES"
         return Inf
     end
 
