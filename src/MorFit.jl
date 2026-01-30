@@ -17,7 +17,4 @@ const PROTEIN_LIGAND_DATA = protein_ligand_data
 # Tests
 include("../tests/Tests.jl")
 
-# Setup
-include("simulation_setup.jl")
-
 end #module MorFit

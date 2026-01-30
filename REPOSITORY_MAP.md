@@ -215,7 +215,7 @@ Before cleanup, decide:
 - [x] Keep or delete `examples/`? - DELETED
 - [x] If keeping examples, update to use "MorFit"? - N/A (deleted)
 - [x] Remove `Manifest.toml` from git? - DONE
-- [ ] Keep template data as .jl files or convert to .jld2?
+- [x] Keep template data as .jl files or convert to .jld2? - KEEP as .jl (will use unified format: `Vector{Matrix{Float64}}` for centers, `Vector{Vector{Float64}}` for radii)
 - [x] What is PyCall used for - keep or remove? - KEEP (alpha_shape_diagrams.jl)
 - [ ] Add proper documentation to Readme.md?
 
@@ -301,3 +301,4 @@ _Track all cleanup actions here:_
 | 2026-01-30 | Refactored | **Unified sta/ppii data formats** - Both assembly types now use list format: `template_centers::Vector{Matrix{Float64}}`, `template_radii::Vector{Vector{Float64}}`. For sta, this is n_mol copies of the same template. Changes: HPC `_get_template_centers_and_radii`, MorFit `_get_realization_radii_and_sizes`, added Vector overloads in `connected_component_calculations.jl` |
 | 2026-01-30 | Deleted | `hamiltonian_monte_carlo.jl` and `simulated_annealing.jl` - Unused algorithms |
 | 2026-01-30 | Deleted | All old Matrix{Float64} format overloads from `connected_component_calculations.jl`, `realizations.jl`, `solvation_free_energy.jl` - Only unified Vector{Matrix} format remains |
+| 2026-01-30 | Deleted | `src/simulation_setup.jl` - Factory functions duplicated in HPC_MorFit's start_simulations.jl |
