@@ -16,9 +16,24 @@ See [../CLAUDE.md](../CLAUDE.md) for allowed commands and permissions.
 
 ## Data Format
 
-Templates use unified list format (supports heterogeneous molecules):
-- `template_centers::Vector{Matrix{Float64}}`
-- `template_radii::Vector{Vector{Float64}}`
+**Simulation state**: `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}` - one (R, t) per molecule
+
+**Templates** (unified list format, supports heterogeneous molecules):
+- `centers::Vector{Matrix{Float64}}` - 3×N matrix per molecule
+- `radii::Vector{Vector{Float64}}` - radius vector per molecule
+
+**MOLECULE_DATA** - Centered building blocks (JLD2):
+```julia
+MorFit.MOLECULE_DATA["4ty7:protein"].centers  # 3×N Matrix
+MorFit.MOLECULE_DATA["4ty7:protein"].radii    # Vector
+```
+
+**EXPERIMENTAL_ASSEMBLIES** - Reference states for RMSD (JLD2):
+```julia
+key = ["4ty7:protein", "4ty7:ligand"]
+state = MorFit.EXPERIMENTAL_ASSEMBLIES[key][1]  # First equivalent state
+R, t = state[1]  # First molecule's rotation and translation
+```
 
 ## Running Tests
 

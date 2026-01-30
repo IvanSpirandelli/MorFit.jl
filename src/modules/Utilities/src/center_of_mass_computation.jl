@@ -21,12 +21,11 @@ function get_center_of_mass(coordinates::Vector{Vector{Float64}}, elements::Vect
         error("The number of coordinate vectors must match the number of elements.")
     end
 
-    # --- Part A: Calculate Center of Mass (COM) ---
     total_mass = 0.0
     center_of_mass = [0.0, 0.0, 0.0]
 
     for i in 1:num_atoms
-        mass = get(ATOMIC_MASSES, elements[i], 0.0) # Defaults to 0.0 if element not found
+        mass = get(ATOMIC_MASSES, elements[i], 0.0)
         if mass == 0.0
             @warn "Element '$(elements[i])' not found in ATOMIC_MASSES dictionary. It will be ignored."
             continue
@@ -34,6 +33,35 @@ function get_center_of_mass(coordinates::Vector{Vector{Float64}}, elements::Vect
 
         total_mass += mass
         center_of_mass .+= mass .* coordinates[i]
+    end
+
+    if total_mass == 0.0
+        error("Total mass is zero. Cannot calculate center of mass. Check if elements are in ATOMIC_MASSES.")
+    end
+
+    center_of_mass ./= total_mass
+    center_of_mass
+end
+
+# Matrix version: coordinates is 3×N matrix
+function get_center_of_mass(coordinates::Matrix{Float64}, elements::Vector{String})
+    num_atoms = length(elements)
+    if size(coordinates, 2) != num_atoms
+        error("Number of columns in coordinates must match number of elements.")
+    end
+
+    total_mass = 0.0
+    center_of_mass = [0.0, 0.0, 0.0]
+
+    for i in 1:num_atoms
+        mass = get(ATOMIC_MASSES, elements[i], 0.0)
+        if mass == 0.0
+            @warn "Element '$(elements[i])' not found in ATOMIC_MASSES dictionary. It will be ignored."
+            continue
+        end
+
+        total_mass += mass
+        center_of_mass .+= mass .* coordinates[:, i]
     end
 
     if total_mass == 0.0
