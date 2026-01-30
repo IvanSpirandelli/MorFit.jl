@@ -1,7 +1,7 @@
 using Graphs
 
 function get_single_subunit_energy_and_measures(template_centers::Vector{Matrix{Float64}}, template_radii::Vector{Vector{Float64}}, rs::Float64, prefactors::AbstractVector, overlap_jump, overlap_slope, delaunay_eps)
-    combined = [solvation_free_energy_and_measures([(QuatRotation(exp(Rotations.RotationVecGenerator([0.0, 0.0, 0.0]...))), [0.0, 0.0, 0.0])], tc, tr, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(template_centers, template_radii)]
+    combined = [solvation_free_energy_and_measures([(QuatRotation(exp(Rotations.RotationVecGenerator([0.0, 0.0, 0.0]...))), [0.0, 0.0, 0.0])], [tc], [tr], rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(template_centers, template_radii)]
     [c[1] for c in combined], [c[2] for c in combined]
 end
 
