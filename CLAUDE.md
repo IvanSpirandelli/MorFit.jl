@@ -1,17 +1,25 @@
 # Claude Instructions for MorFit.jl
 
-## Repository Cleanup Project
+## Overview
+MorFit.jl is a Julia package for molecular fitting using Monte Carlo methods and morphometric energy functions.
 
-We are cleaning up this repository to remove accumulated PhD files.
+## Key Files
+- `REPOSITORY_MAP.md` - Repository structure reference
+- `src/MorFit.jl` - Package entry point
+- `tests/Tests.jl` - Test runner (`MorFit.Tests.run()`)
 
-### Key Files
-- `REPOSITORY_MAP.md` - Documents the repository structure and cleanup status
+## Data Format
+Templates use unified list format (supports heterogeneous molecules):
+- `template_centers::Vector{Matrix{Float64}}`
+- `template_radii::Vector{Vector{Float64}}`
 
-### Instructions
-- **Track all changes** in `REPOSITORY_MAP.md` under a "Changes Made" section
-- Update the document as files are deleted, modified, or reorganized
-- Mark completed items in the decision checklist
+## Running Tests
+```julia
+using MorFit
+MorFit.Tests.run()  # All tests
+MorFit.Tests.run_morphometric_approach_tests()  # Working tests only
+```
 
-### Current Status
-- Repository mapped and documented
-- Awaiting decisions on what to delete/keep
+## Related Repositories
+- `HPC_MorFit` - HPC simulation runner (uses MorFit.jl)
+- `Notebooks_MorFit` - Visualization and analysis notebooks
