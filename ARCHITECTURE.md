@@ -1,8 +1,8 @@
-# MorFit.jl Repository Map
+# MorFit.jl Architecture
 
-**Purpose:** Reference documentation for repository structure
+## Overview
 
----
+Core Julia package for molecular fitting using Monte Carlo methods and morphometric energy functions.
 
 ## Directory Structure
 
