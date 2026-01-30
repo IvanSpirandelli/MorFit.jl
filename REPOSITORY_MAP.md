@@ -303,3 +303,5 @@ _Track all cleanup actions here:_
 | 2026-01-30 | Deleted | All old Matrix{Float64} format overloads from `connected_component_calculations.jl`, `realizations.jl`, `solvation_free_energy.jl` - Only unified Vector{Matrix} format remains |
 | 2026-01-30 | Deleted | `src/simulation_setup.jl` - Factory functions duplicated in HPC_MorFit's start_simulations.jl |
 | 2026-01-30 | Refactored | HPC_MorFit: Extracted factory functions to `simulation_factories.jl` (structs, create_energy, create_perturbation, load_templates, etc.) |
+| 2026-01-30 | Verified | Connected component calculations support heterogeneous molecules (different templates per molecule via Vector indexing) |
+| 2026-01-30 | Overhauled | Tests: Removed stale `test_interface.jl`, stubbed broken tests in `test_configuration_distances.jl` and `test_energy_calls.jl` |

@@ -1,36 +1,40 @@
 function run_configuration_distance_tests()
     @testset verbose = true "Configuration Distances" begin
-        @testset verbose = true "Integration" begin
-            test_configuration_distance_calls()
+        @testset verbose = true "RMSD Align One of Pair" begin
+            test_rmsd_align_one_of_pair()
+        end
+        @testset verbose = true "Global RMSD Target-Inhibitor" begin
+            test_global_rmsd_target_inhibitor()
+        end
+        @testset verbose = true "Fixed Target-Inhibitor RMSD" begin
+            test_fixed_target_inhibitor_rmsd()
+        end
+        @testset verbose = true "Metric to Ground Truth" begin
+            test_metric_to_ground_truth()
         end
     end
 end
 
-function test_configuration_distance_calls()
-    tc = [0.0 1.0; 0.0 0.0; 0.0 0.0]
-    n_mol = 2
-    state_a = fill(0.0, 6 * n_mol)
-    state_a[4] = 5.0
-    state_b = fill(0.0, 6 * n_mol)
-    state_b[4] = 5.5
+function test_rmsd_align_one_of_pair()
+    # Tests get_rmsd_align_one_of_pair with two molecule pairs
+    # Should verify RMSD calculation when aligning one molecule of a pair
+    @assert false "Requires Implementation."
+end
 
-    @test MorFit.get_configuration_distance(tc, state_a, state_b, n_mol) == MorFit.get_configuration_distance(tc, tc, state_a, state_b) 
-    @test MorFit.get_configuration_distance(tc, state_a, state_b, n_mol) == 0.5
+function test_global_rmsd_target_inhibitor()
+    # Tests get_global_rmsd_of_target_inhibitor_pair
+    # Should verify global RMSD when both target and inhibitor are aligned together
+    @assert false "Requires Implementation."
+end
 
-    n_mol = 3
-    state_a = fill(0.0, 6 * n_mol)
-    state_a[4] = 5.0
-    state_b = fill(0.0, 6 * n_mol)
-    state_b[4] = 5.5
+function test_fixed_target_inhibitor_rmsd()
+    # Tests get_rmsd_for_fixed_target_inhibitor_pair
+    # Should verify RMSD when target is fixed and inhibitor follows
+    @assert false "Requires Implementation."
+end
 
-    @test MorFit.get_configuration_distance(tc, state_a, state_b, n_mol) == MorFit.sum_of_permutation(tc, tc, state_a, state_b, [1,2,3], [1,2,3], MorFit.get_theta_of_pair) 
-    @test MorFit.get_configuration_distance(tc, state_a, state_b, n_mol) ≈ 1.0/3.0
-
-    n_mol = 4
-    state_a = fill(0.0, 6 * n_mol)
-    state_a[4] = 5.0
-    state_b = fill(0.0, 6 * n_mol)
-    state_b[4] = 5.5
-
-    @test MorFit.get_configuration_distance(tc, state_a, state_b, n_mol) ≈ 0.25
+function test_metric_to_ground_truth()
+    # Tests get_metric_to_ground_truth for n_mol=2 and n_mol=3 cases
+    # Should verify comparison against experimental assembly data
+    @assert false "Requires Implementation."
 end
