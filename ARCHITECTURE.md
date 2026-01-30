@@ -14,16 +14,15 @@ MorFit.jl/
 │   │   ├── Utilities/             # State handling, RMSD, initialization
 │   │   ├── Algorithms/            # Monte Carlo samplers (RWM, CC-RWM)
 │   │   └── Energies/              # Energy functions (solvation, morphometric)
-│   └── templates/                 # Protein structure data
-│       ├── target_and_inhibitor_templates.jl    # TEMPLATES dict
-│       ├── experimental_assembly.jl             # Ground truth conformations
-│       ├── asymmetric_unit_templates.jl         # Asymmetric unit definitions
-│       └── protein_ligand_data.jld2             # PROTEIN_LIGAND_DATA (binary)
+│   └── templates/                 # Protein structure data (JLD2 binary)
+│       ├── molecule_data.jld2         # MOLECULE_DATA: centered templates
+│       └── experimental_assemblies.jld2  # EXPERIMENTAL_ASSEMBLIES: ground truth
 ├── tests/
 │   ├── Tests.jl                   # Test runner
 │   ├── test_morphometric_approach.jl  # ✓ Working
 │   ├── test_energy_calls.jl           # Stubbed - needs implementation
-│   └── test_configuration_distances.jl # Stubbed - needs implementation
+│   ├── test_configuration_distances.jl # ✓ Working (RMSD tests)
+│   └── test_simulation.jld2           # Test simulation data for RMSD tests
 ├── Project.toml
 └── LICENSE (MIT)
 ```
@@ -59,6 +58,28 @@ MorFit.jl/
 | `alpha_shapes/alpha_shape_diagrams.jl` | Alpha-complex via Python |
 | `morphometric_approach/ball_union_measures.jl` | Union of balls calculations |
 | `morphometric_approach/prefactors.jl` | Pre-computed energy factors |
+
+---
+
+## Global Data Structures
+
+### MOLECULE_DATA
+Centered molecular building blocks loaded from JLD2:
+```julia
+MorFit.MOLECULE_DATA["4ty7:protein"]  # Returns NamedTuple
+  .centers  # 3×N Matrix{Float64} - atom coordinates (centered at origin)
+  .radii    # Vector{Float64} - atomic radii
+```
+Keys follow format: `"pdb_id:component"` (e.g., `"4ty7:protein"`, `"4ty7:ligand"`)
+
+### EXPERIMENTAL_ASSEMBLIES
+Ground truth configurations for RMSD calculation:
+```julia
+MorFit.EXPERIMENTAL_ASSEMBLIES[["4ty7:protein", "4ty7:ligand"]]  # Returns Vector
+  [1].centers  # Realized coordinates for first equivalent assembly
+  [2].centers  # Second equivalent assembly (if exists)
+```
+Keys are `Vector{String}` of molecule IDs. Values contain pre-realized coordinates.
 
 ---
 
@@ -109,5 +130,6 @@ HPC_MorFit depends on MorFit.jl for core functionality. Key exports used:
 - `get_rmsd_for_fixed_target_inhibitor_pair`
 
 **Data:**
-- `TEMPLATES` - Same-type assembly templates
-- `PROTEIN_LIGAND_DATA` - Protein-ligand pairs
+- `MOLECULE_DATA` - Centered molecular templates
+- `EXPERIMENTAL_ASSEMBLIES` - Ground truth configurations for RMSD
+- `get_reference_templates(molecule_ids)` - Helper to extract templates
