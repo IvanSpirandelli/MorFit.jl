@@ -64,22 +64,43 @@ MorFit.jl/
 ## Global Data Structures
 
 ### MOLECULE_DATA
-Centered molecular building blocks loaded from JLD2:
+Centered molecular building blocks (templates) loaded from JLD2:
 ```julia
 MorFit.MOLECULE_DATA["4ty7:protein"]  # Returns NamedTuple
-  .centers  # 3×N Matrix{Float64} - atom coordinates (centered at origin)
+  .centers  # 3×N Matrix{Float64} - atom coordinates CENTERED AT ORIGIN (COM = [0,0,0])
   .radii    # Vector{Float64} - atomic radii
 ```
-Keys follow format: `"pdb_id:component"` (e.g., `"4ty7:protein"`, `"4ty7:ligand"`)
+- Keys follow format: `"pdb_id:component"` (e.g., `"4ty7:protein"`, `"4ty7:ligand"`)
+- Each entry is ONE molecule template, centered at the origin
+- Used as building blocks for simulations (apply rotation + translation to position)
 
 ### EXPERIMENTAL_ASSEMBLIES
-Ground truth configurations for RMSD calculation:
+Ground truth configurations for RMSD calculation. Stores **realized coordinates** (already positioned in space):
 ```julia
-MorFit.EXPERIMENTAL_ASSEMBLIES[["4ty7:protein", "4ty7:ligand"]]  # Returns Vector
-  [1].centers  # Realized coordinates for first equivalent assembly
-  [2].centers  # Second equivalent assembly (if exists)
+key = ["4ty7:protein", "4ty7:ligand"]
+assemblies = MorFit.EXPERIMENTAL_ASSEMBLIES[key]  # Returns Vector of equivalent assemblies
+
+# Each assembly is a NamedTuple:
+assembly = assemblies[1]
+assembly.centers  # Vector{Matrix{Float64}} - one 3×N matrix per molecule (REALIZED positions)
+assembly.radii    # Vector{Vector{Float64}} - one radius vector per molecule
+
+# Access individual molecules:
+assembly.centers[1]  # 3×N Matrix - protein coordinates (already in final position)
+assembly.centers[2]  # 3×N Matrix - ligand coordinates (already in final position)
 ```
-Keys are `Vector{String}` of molecule IDs. Values contain pre-realized coordinates.
+- Keys are `Vector{String}` of molecule IDs specifying which templates are used
+- Values are `Vector` of equivalent assemblies (for permutation symmetry in homodimers/trimers)
+- Coordinates are **pre-realized** (not centered) - ready for direct RMSD comparison
+
+### Data Flow
+```
+MOLECULE_DATA (centered templates)     EXPERIMENTAL_ASSEMBLIES (realized)
+         │                                        │
+         │ Apply R * template + t                 │ Direct comparison
+         ▼                                        ▼
+   Simulation state  ──────────────────────►  RMSD calculation
+```
 
 ---
 
@@ -126,7 +147,7 @@ HPC_MorFit depends on MorFit.jl for core functionality. Key exports used:
 
 **Utilities:**
 - `get_initial_state`, `perturb_single_randomly_chosen`
-- `get_center_of_mass`, `get_flat_realization`
+- `get_center_of_mass`, `get_realization`
 - `get_rmsd_for_fixed_target_inhibitor_pair`
 
 **Data:**

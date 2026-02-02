@@ -55,7 +55,7 @@ function solvation_free_energy(
     delaunay_eps::Float64
     )
     n_atoms_per_mol, flat_radii = _prepare_args(template_centers, radii)
-    atom_coordinates = Utilities.get_flat_realization(x, template_centers)
+    atom_coordinates = Utilities.get_realization(x, template_centers, format=:flat)
     solvation_free_energy(atom_coordinates, n_atoms_per_mol, flat_radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
 end
 
@@ -95,7 +95,7 @@ function solvation_free_energy_and_measures(
     )
     n_atoms_per_mol, flat_radii = _prepare_args(template_centers, radii)
 
-    flat_realization = Utilities.get_flat_realization(x, template_centers)
+    flat_realization = Utilities.get_realization(x, template_centers, format=:flat)
 
     measures = get_geometric_measures_and_overlap_value(
         flat_realization,
@@ -122,7 +122,7 @@ function solvation_free_energy_and_overlap(
     )
     n_atoms_per_mol, flat_radii = _prepare_args(template_centers, radii)
 
-    flat_realization = Utilities.get_flat_realization(x, template_centers)
+    flat_realization = Utilities.get_realization(x, template_centers, format=:flat)
 
     measures = get_geometric_measures_and_overlap_value(
         flat_realization,

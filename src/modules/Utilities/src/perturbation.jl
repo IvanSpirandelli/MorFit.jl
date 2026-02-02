@@ -21,10 +21,3 @@ function get_index_and_perturb_single_randomly_chosen(x::Vector{Tuple{QuatRotati
     x_cand[i] = (x_cand[i][1] * exp(Rotations.RotationVecGenerator(randn(3) .* σ_r...)), x_cand[i][2] .+ (randn(3) .* σ_t))
     i, x_cand
 end
-
-function perturb_single_randomly_chosen_only_translations(x, σ_t)
-    x_cand = deepcopy(x)
-    i  = rand(0:(length(x)÷3)-1)
-    x_cand[(i*3)+1:(i*3)+3] = x_cand[(i*3)+1:(i*3)+3] .+ (randn(3) .* σ_t)
-    x_cand
-end

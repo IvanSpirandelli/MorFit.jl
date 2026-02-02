@@ -71,30 +71,3 @@ function get_center_of_mass(coordinates::Matrix{Float64}, elements::Vector{Strin
     center_of_mass ./= total_mass
     center_of_mass
 end
-
-function get_moment_of_inertia(centered_coordinates::Vector{Vector{Float64}}, elements::Vector{String})
-    # --- Calculate Moment of Inertia (MOI) Tensor ---
-    inertia_tensor = zeros(3, 3)
-
-    for i in 1:num_atoms
-        mass = get(ATOMIC_MASSES, elements[i], 0.0)
-        if mass == 0.0; continue; end # Skip elements not in the dictionary
-
-        x, y, z = centered_coordinates[i]
-
-        inertia_tensor[1, 1] += mass * (y^2 + z^2)
-        inertia_tensor[2, 2] += mass * (x^2 + z^2)
-        inertia_tensor[3, 3] += mass * (x^2 + y^2)
-
-        inertia_tensor[1, 2] -= mass * x * y
-        inertia_tensor[1, 3] -= mass * x * z
-        inertia_tensor[2, 3] -= mass * y * z
-    end
-
-    # The tensor is symmetric, so we fill in the other half
-    inertia_tensor[2, 1] = inertia_tensor[1, 2]
-    inertia_tensor[3, 1] = inertia_tensor[1, 3]
-    inertia_tensor[3, 2] = inertia_tensor[2, 3]
-
-    inertia_tensor
-end

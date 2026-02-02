@@ -15,9 +15,11 @@ const _templates_dir = joinpath(@__DIR__, "templates")
 @load joinpath(_templates_dir, "molecule_data.jld2") molecule_data
 const MOLECULE_DATA = molecule_data
 
-# EXPERIMENTAL_ASSEMBLIES: reference configurations for RMSD
+# EXPERIMENTAL_ASSEMBLIES: reference configurations for RMSD (REALIZED COORDINATES)
 # Keys: Vector{String} (e.g., ["4ty7:protein", "4ty7:ligand"])
-# Values: Vector of states, each state is Vector{Tuple{QuatRotation, Vector{Float64}}}
+# Values: Vector of assemblies, each assembly is NamedTuple(centers=Vector{Matrix}, radii=Vector{Vector})
+#         - centers[i] is 3×N Matrix of REALIZED coordinates for molecule i (already positioned in space)
+#         - radii[i] is Vector{Float64} of atomic radii for molecule i
 @load joinpath(_templates_dir, "experimental_assemblies.jld2") experimental_assemblies
 const EXPERIMENTAL_ASSEMBLIES = experimental_assemblies
 

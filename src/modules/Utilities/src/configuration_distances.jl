@@ -44,10 +44,10 @@ function get_rmsd_for_fixed_target_inhibitor_pair(
     ref_target_state = state_ref[1]
     ref_ligand_state = state_ref[2]
 
-    coords_W = get_point_vector_realization([sim_target_state], [templates_sim[1]])
-    coords_X = get_point_vector_realization([sim_ligand_state], [templates_sim[2]])
-    coords_Y = get_point_vector_realization([ref_target_state], [templates_ref[1]])
-    coords_Z = get_point_vector_realization([ref_ligand_state], [templates_ref[2]])
+    coords_W = get_realization([sim_target_state], [templates_sim[1]], format=:points)
+    coords_X = get_realization([sim_ligand_state], [templates_sim[2]], format=:points)
+    coords_Y = get_realization([ref_target_state], [templates_ref[1]], format=:points)
+    coords_Z = get_realization([ref_ligand_state], [templates_ref[2]], format=:points)
 
     return _calculate_driven_rmsd(coords_W, coords_X, coords_Y, coords_Z)
 end

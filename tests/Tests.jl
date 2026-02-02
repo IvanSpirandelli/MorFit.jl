@@ -1,6 +1,6 @@
 module Tests
 
-export run
+export run, run_morphometric_approach_tests, run_realization_tests
 
 using Test
 using GeometryBasics
@@ -10,6 +10,7 @@ using MorFit
 include("test_morphometric_approach.jl")
 include("test_energy_calls.jl")
 include("test_configuration_distances.jl")
+include("test_realizations.jl")
 
 function run()
     @testset verbose = true "Morphometric Approach Tests" begin
@@ -20,6 +21,9 @@ function run()
     end
     @testset verbose = true "Configuration Distances Tests" begin
         run_configuration_distance_tests()
+    end
+    @testset verbose = true "Realization Tests" begin
+        run_realization_tests()
     end
 end
 
