@@ -4,9 +4,9 @@
 
 MorFit.jl is the core Julia package for molecular fitting using Monte Carlo methods and morphometric energy functions.
 
-## Permissions
+## Permissions & Skills
 
-See [../CLAUDE.md](../CLAUDE.md) for allowed commands and permissions.
+See [../CLAUDE.md](../CLAUDE.md) for allowed commands, permissions, and available skills.
 
 ## Key Files
 
