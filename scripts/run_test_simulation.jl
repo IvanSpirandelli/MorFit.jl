@@ -18,7 +18,6 @@ using Rotations
 
 # Configuration
 molecule_ids = ["1a30:protein", "1a30:ligand"]
-n_mol = 2
 bounds = 100.0
 rs = 1.4
 η = 0.0073
@@ -87,7 +86,6 @@ println("Done! Sampled $(length(output["Es"])) states.")
 # Save
 input = Dict(
     "molecule_ids" => molecule_ids,
-    "n_mol" => n_mol,
     "centers" => template_centers,
     "radii" => template_radii,
     "rs" => rs,

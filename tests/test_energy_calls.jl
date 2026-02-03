@@ -36,7 +36,6 @@ function _get_test_input(n_mol::Int)
     return Dict(
         "template_centers" => template_centers,
         "template_radii" => template_radii,
-        "n_mol" => n_mol,
         "bounds" => 150.0,
         "rs" => rs,
         "prefactors" => prefactors,
