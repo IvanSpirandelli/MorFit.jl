@@ -21,14 +21,15 @@ module Algorithms
     """
         add_to_output(measures::Dict, output::Dict{String, Vector})
 
-    Append all key-value pairs from `measures` to the corresponding vectors in `output`.
+    Append key-value pairs from `measures` to the corresponding vectors in `output`.
 
-    Each key in `measures` should exist in `output`, and its value will be pushed
-    to the vector at that key.
+    Only keys that exist in both `measures` and `output` are added.
     """
     function add_to_output(measures::Dict, output::Dict{String, Vector})
         for (k, v) in measures
-            push!(output[k], v)
+            if haskey(output, k)
+                push!(output[k], v)
+            end
         end
     end
 

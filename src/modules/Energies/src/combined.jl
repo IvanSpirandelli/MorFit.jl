@@ -46,7 +46,7 @@ function calculate_combined_energy(
 
     # 1. Compute topology energy: T = Σ(λᵢ · Pᵢ)
     topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.centers, vcat(system.radii...),
+        x, system.centers, system.radii,
         topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
     )
 
@@ -104,9 +104,8 @@ function calculate_combined_energy(
     prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
 
     # 1. Compute topology energy (whole system): T = Σ(λᵢ · Pᵢ)
-    flat_radii = vcat(system.radii...)
     topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.centers, flat_radii,
+        x, system.centers, system.radii,
         topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
     )
 
