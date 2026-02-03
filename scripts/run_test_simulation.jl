@@ -1,9 +1,9 @@
 #=
 Run a minimal test simulation for 50 iterations.
-Saves to Simulation_Results/test.jld2
+Saves to simulation-results/test.jld2
 
 Usage:
-    source ../python_environments/python_tda_313/bin/activate
+    source ../python-environments/python-tda-313/bin/activate
     julia --project=. scripts/run_test_simulation.jl
 =#
 
@@ -102,7 +102,7 @@ input = Dict(
     "persistence_weights" => persistence_weights,
 )
 
-output_dir = joinpath(@__DIR__, "../../Simulation_Results")
+output_dir = joinpath(@__DIR__, "../../simulation-results")
 mkpath(output_dir)
 output_file = joinpath(output_dir, "test.jld2")
 
