@@ -3,6 +3,8 @@
 #
 # Computes total energy using the additive model:
 #   E = θ_G · F_sol + θ_O · O + θ_T · Σ(λᵢ · Pᵢ)
+#
+# Routes computation based on θ values - skips components when θ = 0.
 =============================================================================#
 
 """
@@ -12,6 +14,8 @@
 Calculate combined energy for a 2-molecule system using the additive model:
 
     E = θ_G · F_sol + θ_O · O + θ_T · T
+
+Routes computation based on θ values - skips components when corresponding θ = 0.
 
 # Arguments
 - `x`: State vector of (rotation, translation) tuples
@@ -38,35 +42,41 @@ function calculate_combined_energy(
     precomputed::Precomputed,
     bol_check::Function
 )
-    # Guard clause: Exit early if out of bounds
     !in_bounds(x, system.bounds) && return Inf, Dict{String, Any}()
 
-    # Compute prefactors from solvation parameters (White Bear model)
-    prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
+    energy = 0.0
+    measures = Dict{String, Any}()
 
-    # 1. Compute topology energy: T = Σ(λᵢ · Pᵢ)
-    topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.centers, system.radii,
-        topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
-    )
+    # Solvation + Overlap (currently coupled in C++ lib, skip if both θ = 0)
+    if scales.θ_G != 0.0 || scales.θ_O != 0.0
+        prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
+        fsol, overlap = solvation_free_energy_and_separate_overlap_with_bounding_container_check(
+            x, system.centers, system.radii,
+            sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
+            num_params.delaunay_eps, precomputed.single_energies, bol_check
+        )
+        energy += scales.θ_G * fsol + scales.θ_O * overlap
+        measures["Es_fsol"] = fsol
+        measures["Es_overlap"] = overlap
+        measures["OLs"] = overlap
+    else
+        measures["Es_fsol"] = 0.0
+        measures["Es_overlap"] = 0.0
+        measures["OLs"] = 0.0
+    end
 
-    # 2. Compute solvation free energy and overlap separately
-    fsol, overlap = solvation_free_energy_and_separate_overlap_with_bounding_container_check(
-        x, system.centers, system.radii,
-        sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
-        num_params.delaunay_eps, precomputed.single_energies, bol_check
-    )
-
-    # 3. Combine with scaling factors: E = θ_G · F_sol + θ_O · O + θ_T · T
-    energy = scales.θ_G * fsol + scales.θ_O * overlap + scales.θ_T * topo_energy
-
-    # 4. Build measures dictionary
-    measures = merge(topo_measures, Dict{String, Any}(
-        "Es_fsol" => fsol,
-        "Es_overlap" => overlap,
-        "Es_topo" => topo_energy,
-        "OLs" => overlap
-    ))
+    # Topology (independent, skip if θ_T = 0)
+    if scales.θ_T != 0.0
+        topo_energy, topo_measures = compute_total_alpha_shape_persistence(
+            x, system.centers, system.radii,
+            topo_params.λ, num_params.exact_delaunay, true
+        )
+        energy += scales.θ_T * topo_energy
+        merge!(measures, topo_measures)
+        measures["Es_topo"] = topo_energy
+    else
+        measures["Es_topo"] = 0.0
+    end
 
     return energy, measures
 end
@@ -76,6 +86,8 @@ end
                               topo_params, num_params, scales, precomputed, bol_check)
 
 Calculate combined energy for n>2 molecule systems with connected component tracking.
+
+Routes computation based on θ values - skips components when corresponding θ = 0.
 
 # Additional Arguments
 - `ccs`: Connected component energy cache from previous iteration
@@ -97,40 +109,44 @@ function calculate_combined_energy(
     precomputed::Precomputed,
     bol_check::Function
 )
-    # Guard clause: Exit early if out of bounds
     !in_bounds(x, system.bounds) && return Inf, Dict{String, Any}(), ccs
 
-    # Compute prefactors from solvation parameters (White Bear model)
-    prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
+    energy = 0.0
+    measures = Dict{String, Any}()
+    updated_ccs = ccs
 
-    # 1. Compute topology energy (whole system): T = Σ(λᵢ · Pᵢ)
-    topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.centers, system.radii,
-        topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
-    )
+    # Solvation + Overlap (currently coupled, skip if both θ = 0)
+    if scales.θ_G != 0.0 || scales.θ_O != 0.0
+        prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
+        fsol, fsol_measures, updated_ccs = connected_component_wise_solvation_free_energy_and_measures(
+            ccs, p_id, x, system.centers, system.radii,
+            sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
+            num_params.delaunay_eps, precomputed.single_energies, precomputed.single_measures, bol_check
+        )
+        overlap = get(fsol_measures, "OLs", 0.0)
+        fsol_pure = fsol - overlap
+        energy += scales.θ_G * fsol_pure + scales.θ_O * overlap
+        merge!(measures, fsol_measures)
+        measures["Es_fsol"] = fsol_pure
+        measures["Es_overlap"] = overlap
+    else
+        measures["Es_fsol"] = 0.0
+        measures["Es_overlap"] = 0.0
+        measures["OLs"] = 0.0
+    end
 
-    # 2. Compute solvation free energy for connected components
-    # Note: CC calculation currently returns combined fsol+overlap
-    # TODO: Separate overlap tracking for CC case
-    fsol, fsol_measures, updated_ccs = connected_component_wise_solvation_free_energy_and_measures(
-        ccs, p_id, x, system.centers, system.radii,
-        sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
-        num_params.delaunay_eps, precomputed.single_energies, precomputed.single_measures, bol_check
-    )
-
-    # Extract overlap from measures if available
-    overlap = get(fsol_measures, "OLs", 0.0)
-    fsol_pure = fsol - overlap  # Remove overlap from combined value
-
-    # 3. Combine with scaling factors: E = θ_G · F_sol + θ_O · O + θ_T · T
-    energy = scales.θ_G * fsol_pure + scales.θ_O * overlap + scales.θ_T * topo_energy
-
-    # 4. Build measures dictionary
-    measures = merge(fsol_measures, topo_measures, Dict{String, Any}(
-        "Es_fsol" => fsol_pure,
-        "Es_overlap" => overlap,
-        "Es_topo" => topo_energy
-    ))
+    # Topology (independent, skip if θ_T = 0)
+    if scales.θ_T != 0.0
+        topo_energy, topo_measures = compute_total_alpha_shape_persistence(
+            x, system.centers, system.radii,
+            topo_params.λ, num_params.exact_delaunay, true
+        )
+        energy += scales.θ_T * topo_energy
+        merge!(measures, topo_measures)
+        measures["Es_topo"] = topo_energy
+    else
+        measures["Es_topo"] = 0.0
+    end
 
     return energy, measures, updated_ccs
 end
