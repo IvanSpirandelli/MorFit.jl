@@ -1,13 +1,13 @@
 using Graphs
 
-function get_single_subunit_energy_and_measures(template_centers::Vector{Matrix{Float64}}, template_radii::Vector{Vector{Float64}}, rs::Float64, prefactors::AbstractVector, overlap_jump, overlap_slope, delaunay_eps)
-    combined = [solvation_free_energy_and_measures([(QuatRotation(exp(Rotations.RotationVecGenerator([0.0, 0.0, 0.0]...))), [0.0, 0.0, 0.0])], [tc], [tr], rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(template_centers, template_radii)]
+function get_single_subunit_energy_and_measures(centers::Vector{Matrix{Float64}}, radii::Vector{Vector{Float64}}, rs::Float64, prefactors::AbstractVector, overlap_jump, overlap_slope, delaunay_eps)
+    combined = [solvation_free_energy_and_measures([(QuatRotation(exp(Rotations.RotationVecGenerator([0.0, 0.0, 0.0]...))), [0.0, 0.0, 0.0])], [tc], [tr], rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(centers, radii)]
     [c[1] for c in combined], [c[2] for c in combined]
 end
 
-function get_bounding_radii(template_centers::Vector{Matrix{Float64}}, template_radii::Vector{Vector{Float64}}, rs::Float64)
-    max_ds = [maximum([euclidean([0.0, 0.0, 0.0], e) for e in eachcol(tc)]) for tc in template_centers]
-    max_rs = [maximum(r) for r in template_radii]
+function get_bounding_radii(centers::Vector{Matrix{Float64}}, radii::Vector{Vector{Float64}}, rs::Float64)
+    max_ds = [maximum([euclidean([0.0, 0.0, 0.0], e) for e in eachcol(tc)]) for tc in centers]
+    max_rs = [maximum(r) for r in radii]
     return [d+r+rs for (d,r) in zip(max_ds, max_rs)]
 end
 
@@ -22,7 +22,7 @@ end
 # Use with standard RWM and 2 subunits only
 function solvation_free_energy_and_measures_with_bounding_container_check_in_bounds(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
+    centers::Vector{Matrix{Float64}},
     radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
@@ -36,7 +36,7 @@ function solvation_free_energy_and_measures_with_bounding_container_check_in_bou
     )
     @assert length(x) == 2 "This function cannot handle more than two molecules"
     if in_bounds(x, bounds)
-        solvation_free_energy_and_measures_with_bounding_container_check(x, template_centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
+        solvation_free_energy_and_measures_with_bounding_container_check(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
     else
         Inf, Dict{String, Any}()
     end
@@ -44,7 +44,7 @@ end
 
 function solvation_free_energy_and_measures_with_bounding_container_check(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
+    centers::Vector{Matrix{Float64}},
     radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
@@ -59,12 +59,12 @@ function solvation_free_energy_and_measures_with_bounding_container_check(
     if !molecule_boundary_overlap_check(x)
         return single_subunit_energies[1] + single_subunit_energies[2], Dict{String, Any}(k => single_subunit_measures[1][k] + single_subunit_measures[2][k] for k in keys(single_subunit_measures[1]))
     end
-    solvation_free_energy_and_measures(x, template_centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
+    solvation_free_energy_and_measures(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
 end
 
 function solvation_free_energy_and_separate_overlap_with_bounding_container_check(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
+    centers::Vector{Matrix{Float64}},
     radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
@@ -78,7 +78,7 @@ function solvation_free_energy_and_separate_overlap_with_bounding_container_chec
     if !molecule_boundary_overlap_check(x)
         return single_subunit_energies[1] + single_subunit_energies[2], 0.0
     end
-    solvation_free_energy_and_overlap(x, template_centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
+    solvation_free_energy_and_overlap(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
 end
 
 # Stuff for 3 or more subunits
@@ -101,8 +101,8 @@ function connected_component_wise_solvation_free_energy_and_measures_in_bounds(
     last_iteration_ccs_energies_and_measures::Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}},
     transformed_index::Int,
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
-    template_radii::Vector{Vector{Float64}},
+    centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
     overlap_jump::Float64,
@@ -114,7 +114,7 @@ function connected_component_wise_solvation_free_energy_and_measures_in_bounds(
     molecule_boundary_overlap_check::Function,
     )
     if in_bounds(x, bounds)
-        connected_component_wise_solvation_free_energy_and_measures(last_iteration_ccs_energies_and_measures, transformed_index, x, template_centers, template_radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
+        connected_component_wise_solvation_free_energy_and_measures(last_iteration_ccs_energies_and_measures, transformed_index, x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
     else
         Inf, Dict{String, Any}(), Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}}()
     end
@@ -124,8 +124,8 @@ function connected_component_wise_solvation_free_energy_and_measures(
     last_iteration_ccs_energies_and_measures::Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}},
     transformed_index::Int,
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
-    template_radii::Vector{Vector{Float64}},
+    centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
     overlap_jump::Float64,
@@ -146,10 +146,10 @@ function connected_component_wise_solvation_free_energy_and_measures(
             ccs_energies_and_measures[cc] = single_subunit_energies[mol_idx], single_subunit_measures[mol_idx]
         elseif !(cc in keys(last_iteration_ccs_energies_and_measures)) || cc == indexed_cc
             sub_state = get_sub_state(x, cc)
-            sub_template_centers = template_centers[cc]
-            sub_template_radii = template_radii[cc]
+            cc_centers = centers[cc]
+            cc_radii = radii[cc]
             ccs_energies_and_measures[cc] = solvation_free_energy_and_measures(
-                sub_state, sub_template_centers, sub_template_radii,
+                sub_state, cc_centers, cc_radii,
                 rs, prefactors, overlap_jump, overlap_slope, delaunay_eps
             )
         else
@@ -169,8 +169,8 @@ end
 
 function get_initial_connected_component_energies(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}},
-    template_radii::Vector{Vector{Float64}},
+    centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
     rs::Float64,
     prefactors::AbstractVector,
     overlap_jump::Float64,
@@ -185,10 +185,10 @@ function get_initial_connected_component_energies(
 
     for cc in ccs
         sub_state = get_sub_state(x, cc)
-        sub_template_centers = template_centers[cc]
-        sub_template_radii = template_radii[cc]
+        cc_centers = centers[cc]
+        cc_radii = radii[cc]
         ccs_energies_and_measures[cc] = solvation_free_energy_and_measures(
-            sub_state, sub_template_centers, sub_template_radii,
+            sub_state, cc_centers, cc_radii,
             rs, prefactors, overlap_jump, overlap_slope, delaunay_eps
         )
     end

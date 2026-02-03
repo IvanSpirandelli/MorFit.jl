@@ -38,18 +38,18 @@ EnergyScales(; θ_G::Float64=1.0, θ_O::Float64=1.0, θ_T::Float64=1.0) = Energy
 Molecular system definition containing templates and simulation bounds.
 
 # Fields
-- `template_centers::Vector{Matrix{Float64}}`: 3×N coordinate matrix per molecule
-- `template_radii::Vector{Vector{Float64}}`: Atomic radii per molecule
+- `centers::Vector{Matrix{Float64}}`: 3×N coordinate matrix per molecule (templates)
+- `radii::Vector{Vector{Float64}}`: Atomic radii per molecule
 - `bounds::Float64`: Simulation box boundary
 """
 struct MolecularSystem
-    template_centers::Vector{Matrix{Float64}}
-    template_radii::Vector{Vector{Float64}}
+    centers::Vector{Matrix{Float64}}
+    radii::Vector{Vector{Float64}}
     bounds::Float64
 end
 
 """Number of molecules in the system."""
-n_molecules(system::MolecularSystem) = length(system.template_centers)
+n_molecules(system::MolecularSystem) = length(system.centers)
 
 #=============================================================================
 # Energy Parameters

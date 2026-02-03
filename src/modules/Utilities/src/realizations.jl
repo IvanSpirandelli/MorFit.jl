@@ -1,13 +1,13 @@
 using Rotations
 
 """
-    get_realization(x, template_centers; format=:matrix)
+    get_realization(x, centers; format=:matrix)
 
 Transform template coordinates using rotation-translation pairs to produce realized coordinates.
 
 # Arguments
 - `x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`: Rotation-translation pairs, one per molecule
-- `template_centers::Vector{Matrix{Float64}}`: Template coordinates as 3×N matrices, one per molecule
+- `centers::Vector{Matrix{Float64}}`: Template coordinates as 3×N matrices, one per molecule
 - `format::Symbol`: Output format (default `:matrix`)
 
 # Formats
@@ -30,11 +30,11 @@ get_realization(x, templates, format=:points)    # Vector{Vector{Float64}}
 """
 function get_realization(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers::Vector{Matrix{Float64}};
+    centers::Vector{Matrix{Float64}};
     format::Symbol=:matrix
 )
     # Core transformation: R * coords + t for each molecule
-    matrices = [R * tc .+ t for ((R, t), tc) in zip(x, template_centers)]
+    matrices = [R * tc .+ t for ((R, t), tc) in zip(x, centers)]
 
     if format == :matrix
         return matrices

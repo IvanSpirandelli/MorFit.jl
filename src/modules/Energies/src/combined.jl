@@ -46,13 +46,13 @@ function calculate_combined_energy(
 
     # 1. Compute topology energy: T = Σ(λᵢ · Pᵢ)
     topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.template_centers, vcat(system.template_radii...),
+        x, system.centers, vcat(system.radii...),
         topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
     )
 
     # 2. Compute solvation free energy and overlap separately
     fsol, overlap = solvation_free_energy_and_separate_overlap_with_bounding_container_check(
-        x, system.template_centers, system.template_radii,
+        x, system.centers, system.radii,
         sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
         num_params.delaunay_eps, precomputed.single_energies, bol_check
     )
@@ -104,9 +104,9 @@ function calculate_combined_energy(
     prefactors = get_wb_prefactors(sol_params.rs, sol_params.η)
 
     # 1. Compute topology energy (whole system): T = Σ(λᵢ · Pᵢ)
-    radii = vcat(system.template_radii...)
+    flat_radii = vcat(system.radii...)
     topo_energy, topo_measures = compute_total_alpha_shape_persistence(
-        x, system.template_centers, radii,
+        x, system.centers, flat_radii,
         topo_params.λ, num_params.exact_delaunay, true  # compute_weighted=true
     )
 
@@ -114,7 +114,7 @@ function calculate_combined_energy(
     # Note: CC calculation currently returns combined fsol+overlap
     # TODO: Separate overlap tracking for CC case
     fsol, fsol_measures, updated_ccs = connected_component_wise_solvation_free_energy_and_measures(
-        ccs, p_id, x, system.template_centers, system.template_radii,
+        ccs, p_id, x, system.centers, system.radii,
         sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
         num_params.delaunay_eps, precomputed.single_energies, precomputed.single_measures, bol_check
     )
@@ -150,7 +150,7 @@ This function maintains backward compatibility with the old μ-interpolation mod
 """
 function calculate_combined_potential(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers,
+    centers,
     radii,
     rs::Float64,
     prefactors::AbstractVector,
@@ -171,12 +171,12 @@ function calculate_combined_potential(
 
     # 1. Compute total alpha shape persistence
     tasp, tasp_measures = compute_total_alpha_shape_persistence(
-        x, template_centers, radii, persistence_weights, exact_delaunay, compute_weighted
+        x, centers, radii, persistence_weights, exact_delaunay, compute_weighted
     )
 
     # 2. Compute solvation free energy
     fsol, fsol_measures = solvation_free_energy_and_measures_with_bounding_container_check(
-        x, template_centers, radii, rs, prefactors,
+        x, centers, radii, rs, prefactors,
         overlap_jump, overlap_slope, delaunay_eps, ssu_energy, ssu_measures, bol_nmol
     )
 
@@ -189,7 +189,7 @@ end
 
 function calculate_combined_potential_with_separate_overlap(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers,
+    centers,
     radii,
     rs::Float64,
     prefactors::AbstractVector,
@@ -208,12 +208,12 @@ function calculate_combined_potential_with_separate_overlap(
 
     # 1. Compute total alpha shape persistence
     twasp = total_weighted_alpha_shape_persistence(
-        x, template_centers, radii, persistence_weights, exact_delaunay
+        x, centers, radii, persistence_weights, exact_delaunay
     )
 
     # 2. Compute solvation free energy
     fsol, ol = solvation_free_energy_and_separate_overlap_with_bounding_container_check(
-        x, template_centers, radii, rs, prefactors,
+        x, centers, radii, rs, prefactors,
         overlap_jump, overlap_slope, delaunay_eps, ssu_energy, bol_nmol
     )
 
@@ -226,8 +226,8 @@ function calculate_combined_potential(
     ccs,
     p_id,
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    template_centers,
-    template_radii,
+    centers,
+    radii,
     rs::Float64,
     prefactors::AbstractVector,
     overlap_jump::Float64,
@@ -246,14 +246,14 @@ function calculate_combined_potential(
     !in_bounds(x, bounds) && return Inf, Dict{String, Any}(), ccs
 
     # 1. Compute total alpha shape persistence
-    radii = vcat(template_radii...)
+    flat_radii = vcat(radii...)
     tasp, tasp_measures = compute_total_alpha_shape_persistence(
-        x, template_centers, radii, persistence_weights, exact_delaunay, compute_weighted
+        x, centers, flat_radii, persistence_weights, exact_delaunay, compute_weighted
     )
 
     # 2. Compute solvation free energy for the connected components
     fsol, fsol_measures, updated_ccs = connected_component_wise_solvation_free_energy_and_measures(
-        ccs, p_id, x, template_centers, template_radii, rs, prefactors,
+        ccs, p_id, x, centers, radii, rs, prefactors,
         overlap_jump, overlap_slope, delaunay_eps, ssu_energy, ssu_measures, bol_nmol
     )
 

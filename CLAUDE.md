@@ -79,7 +79,7 @@ topo = TopologyParams([1.0, 0.0, 0.0])
 num = NumericalParams(delaunay_eps=1.0, exact_delaunay=false)
 
 # Molecular system
-system = MolecularSystem(template_centers, template_radii, bounds)
+system = MolecularSystem(centers, radii, bounds)
 ```
 
 ### Energy Functions
