@@ -8,6 +8,8 @@ MorFit.jl is the core Julia package for molecular fitting using Monte Carlo meth
 
 See [../CLAUDE.md](../CLAUDE.md) for allowed commands, permissions, and available skills.
 
+**Important:** Before starting any task, check if a relevant skill applies (e.g., `/morfit-refactor` for refactoring, `/julia-review` for code review). Use `/` to see available skills.
+
 ## Key Files
 
 - `ARCHITECTURE.md` - Repository structure reference
