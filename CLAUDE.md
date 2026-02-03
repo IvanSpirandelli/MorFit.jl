@@ -49,8 +49,8 @@ MorFit.Tests.run_morphometric_approach_tests()  # Working tests only
 
 ## Related Repositories
 
-- `HPC_MorFit` - HPC simulation runner (uses MorFit.jl)
-- `Notebooks_MorFit` - Visualization and analysis notebooks
+- `mor-fit-hpc` - HPC simulation runner (uses MorFit.jl)
+- `mor-fit-analysis` - Visualization and analysis notebooks
 
 ## Energy Model
 

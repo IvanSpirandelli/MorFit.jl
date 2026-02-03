@@ -131,9 +131,9 @@ This supports both same-type assemblies (sta) and heterogeneous assemblies (ppii
 
 ---
 
-## HPC_MorFit Integration
+## mor-fit-hpc Integration
 
-HPC_MorFit depends on MorFit.jl for core functionality. Key exports used:
+mor-fit-hpc depends on MorFit.jl for core functionality. Key exports used:
 
 **Algorithms:**
 - `RandomWalkMetropolis`, `ConnectedComponentRandomWalkMetropolis`

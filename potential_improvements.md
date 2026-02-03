@@ -6,7 +6,7 @@
 **File:** `src/modules/Energies/src/combined.jl`
 
 Functions with 13-18 parameters are hard to use correctly. Consider:
-- Grouping into structs (already have `SolvationParams`, etc. in HPC_MorFit)
+- Grouping into structs (already have `SolvationParams`, etc. in mor-fit-hpc)
 - Using keyword arguments with defaults
 
 ### 2. Hardcoded Default in `perturb_single_specified`
