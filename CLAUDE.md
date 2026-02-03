@@ -50,6 +50,59 @@ MorFit.Tests.run_morphometric_approach_tests()  # Working tests only
 - `HPC_MorFit` - HPC simulation runner (uses MorFit.jl)
 - `Notebooks_MorFit` - Visualization and analysis notebooks
 
+## Energy Model
+
+The total energy uses an additive model with independent scaling factors:
+
+```
+E = θ_G · F_sol + θ_O · O + θ_T · Σ(λᵢ · Pᵢ)
+```
+
+### Parameter Types (MorFit.Energies)
+
+```julia
+using MorFit.Energies
+
+# Energy scaling (defaults to 1.0)
+scales = EnergyScales(θ_G=1.0, θ_O=1.2, θ_T=0.5)
+
+# Solvation parameters (prefactors computed via White Bear)
+sol = SolvationParams(rs=1.4, η=0.3665)
+
+# Overlap penalty
+ol = LinearOverlapParams(jump=1.0, slope=100.0)
+
+# Topology (persistence weights for H₀, H₁, H₂)
+topo = TopologyParams([1.0, 0.0, 0.0])
+
+# Numerical tolerances
+num = NumericalParams(delaunay_eps=1.0, exact_delaunay=false)
+
+# Molecular system
+system = MolecularSystem(template_centers, template_radii, bounds)
+```
+
+### Energy Functions
+
+```julia
+# New additive model (recommended)
+energy, measures = calculate_combined_energy(
+    x, system, sol_params, ol_params, topo_params,
+    num_params, scales, precomputed, bol_check
+)
+
+# Legacy μ-interpolation (deprecated)
+energy, measures = calculate_combined_potential(x, ..., μ, ...)
+```
+
+## Recent Changes (2026-02-03)
+
+### Energy System Refactored
+- New additive energy model: `E = θ_G·F_sol + θ_O·O + θ_T·T`
+- Added `types.jl` with parameter structs
+- `calculate_combined_energy` replaces μ-interpolation
+- Legacy functions preserved for backward compatibility
+
 ## Recent Changes (2026-02-02)
 
 ### Realization Functions Refactored
