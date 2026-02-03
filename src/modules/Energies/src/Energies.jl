@@ -4,6 +4,12 @@ module Energies
     using Rotations
     using Distances
 
+    # Types (exported)
+    export EnergyScales, MolecularSystem, SolvationParams, LinearOverlapParams
+    export TopologyParams, NumericalParams, Precomputed, PerturbationParams
+    export n_molecules
+
+    include("types.jl")
     include("morphometric_approach/ball_union_measures.jl")
     include("morphometric_approach/prefactors.jl")
     include("alpha_shapes/alpha_shape_diagrams.jl")
