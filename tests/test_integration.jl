@@ -155,7 +155,7 @@ function run_integration_tests()
             "centers" => centers, "radii" => radii,
             "rs" => sol.rs, "η" => sol.η, "bounds" => system.bounds,
             "target_iterations" => 5, "T" => 1.3,
-            "simulation_time_minutes" => 60.0,
+            "wall_clock_limit_minutes" => 60.0,
             "x_init" => x_init,
         )
         @save test_file input=input_data output

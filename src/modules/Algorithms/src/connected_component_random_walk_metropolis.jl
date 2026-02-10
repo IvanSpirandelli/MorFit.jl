@@ -31,20 +31,20 @@ struct ConnectedComponentRandomWalkMetropolis{E, P, ICC}
 end
 
 """
-    simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x, simulation_time_minutes, output) -> output
+    simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x, wall_clock_limit_minutes, output) -> output
 
 Run a connected component RWM simulation starting from state `x`.
 
 # Arguments
 - `algorithm`: The CC-RWM algorithm
 - `x`: Initial state as `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
-- `simulation_time_minutes`: Maximum wall-clock time to run
+- `wall_clock_limit_minutes`: Maximum wall-clock time to run
 - `output`: Dictionary to store results
 
 # Output Dictionary Keys
 Same as `RandomWalkMetropolis`, plus any connected component measures.
 """
-function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, simulation_time_minutes::Float64, output::Dict{String, Vector})
+function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, output::Dict{String, Vector})
     start_time = now()
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -60,7 +60,7 @@ function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{
     add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < simulation_time_minutes
+    while current_running_time < wall_clock_limit_minutes
         total_step_attempts += 1
         i, x_cand = perturbation(x)
         E_cand, measures, ucc = energy(icc, i, x_cand)

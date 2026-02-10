@@ -25,14 +25,14 @@ struct RandomWalkMetropolis{E, P}
 end
 
 """
-    simulate!(algorithm::RandomWalkMetropolis, x, simulation_time_minutes, target_iterations, output) -> output
+    simulate!(algorithm::RandomWalkMetropolis, x, wall_clock_limit_minutes, target_iterations, output) -> output
 
 Run a fresh RWM simulation starting from state `x`.
 
 # Arguments
 - `algorithm`: The RWM algorithm with energy, perturbation, and β
 - `x`: Initial state as `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
-- `simulation_time_minutes`: Maximum wall-clock time to run
+- `wall_clock_limit_minutes`: Maximum wall-clock time to run
 - `target_iterations`: Maximum number of MCMC steps
 - `output`: Dictionary to store results (will be populated with trajectory data)
 
@@ -44,7 +44,7 @@ Run a fresh RWM simulation starting from state `x`.
 - `"total_step_attempts"`: Total MCMC steps attempted
 - Plus any keys from the energy function's measures dict
 """
-function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, simulation_time_minutes::Float64, target_iterations::Int, output::Dict{String, Vector})
+function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, target_iterations::Int, output::Dict{String, Vector})
     start_time = now()
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -57,7 +57,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
     add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
     
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < simulation_time_minutes && total_step_attempts < target_iterations
+    while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
@@ -84,7 +84,7 @@ Timestamps are relative to the start of this continuation session.
 
 # Arguments
 - `algorithm`: The RWM algorithm with energy, perturbation, and β
-- `input`: Dictionary with `"simulation_time_minutes"` and `"target_iterations"`
+- `input`: Dictionary with `"wall_clock_limit_minutes"` and `"target_iterations"`
 - `output`: Previous simulation output to continue from
 
 # Returns
@@ -109,7 +109,7 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     total_step_attempts = output["total_step_attempts"][1]
 
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < input["simulation_time_minutes"] && total_step_attempts < input["target_iterations"]
+    while current_running_time < input["wall_clock_limit_minutes"] && total_step_attempts < input["target_iterations"]
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)

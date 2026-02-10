@@ -54,11 +54,11 @@ Replace with proper error handling:
 
 ```julia
 # Instead of:
-@assert haskey(input, "simulation_time_minutes")
+@assert haskey(input, "wall_clock_limit_minutes")
 
 # Use:
-if !haskey(input, "simulation_time_minutes")
-    throw(ArgumentError("input must contain 'simulation_time_minutes'"))
+if !haskey(input, "wall_clock_limit_minutes")
+    throw(ArgumentError("input must contain 'wall_clock_limit_minutes'"))
 end
 ```
 
