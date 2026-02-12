@@ -37,10 +37,9 @@ Run a fresh RWM simulation starting from state `x`.
 - `output`: Dictionary to store results (will be populated with trajectory data)
 
 # Output Dictionary Keys
-- `"Es"`: Accepted energy values
+- `"E_total"`: Accepted energy values
 - `"states"`: Accepted configurations
 - `"αs"`: Step number at each acceptance
-- `"timestamps"`: Wall-clock time (minutes) at each acceptance
 - `"total_step_attempts"`: Total MCMC steps attempted
 - Plus any keys from the energy function's measures dict
 """
@@ -54,8 +53,8 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
 
     total_step_attempts = 1
 
-    add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
-    
+    add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+
     current_running_time = Dates.value(now() - start_time) / 60000.0
     while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
@@ -66,7 +65,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
             # The idea is that at entry i of the array it says at which number of steps m it was accepted. Giving i/m acceptance rate
             E = E_cand
             x = x_cand
-            add_to_output(merge!(measures,Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => current_running_time)), output)
+            add_to_output(merge!(measures,Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
@@ -80,7 +79,6 @@ end
 Resume an RWM simulation from previous output.
 
 Continues from the last accepted state in `output`, extending the trajectory.
-Timestamps are relative to the start of this continuation session.
 
 # Arguments
 - `algorithm`: The RWM algorithm with energy, perturbation, and β
@@ -101,10 +99,7 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
 
     start_time = now()
     x = deepcopy(output["states"][end])
-    E = output["Es"][end]
-
-    # Track cumulative time from previous sessions
-    previous_time = haskey(output, "timestamps") && !isempty(output["timestamps"]) ? output["timestamps"][end] : 0.0
+    E = output["E_total"][end]
 
     total_step_attempts = output["total_step_attempts"][1]
 
@@ -117,7 +112,7 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
         if rand() < exp(-β*(E_cand - E))
             E = E_cand
             x = x_cand
-            add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => previous_time + current_running_time)), output)
+            add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end

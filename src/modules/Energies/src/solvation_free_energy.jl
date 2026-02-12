@@ -78,7 +78,7 @@ function _format_measures_output(measures::AbstractVector, prefactors::AbstractV
     energy = sum(measures .* [prefactors; 1.0])
     measures_dict = Dict{String, Any}(
         "Vs" => measures[1], "As" => measures[2], "Cs" => measures[3],
-        "Xs" => measures[4], "OLs" => measures[5]
+        "Xs" => measures[4], "E_O" => measures[5]
     )
     return energy, measures_dict
 end

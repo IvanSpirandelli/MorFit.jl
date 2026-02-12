@@ -96,9 +96,9 @@ function run_integration_tests()
         )
 
         @test isfinite(energy)
-        @test haskey(measures, "Es_fsol")
-        @test haskey(measures, "Es_topo")
-        @test haskey(measures, "Es_overlap")
+        @test haskey(measures, "E_G")
+        @test haskey(measures, "E_T")
+        @test haskey(measures, "E_O")
     end
 
     @testset "RWM Simulation" begin
@@ -135,9 +135,9 @@ function run_integration_tests()
         # Output storage
         output = Dict{String, Vector}(
             "states" => Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}(),
-            "Es" => Float64[], "Es_fsol" => Float64[], "Es_topo" => Float64[],
-            "Es_overlap" => Float64[], "OLs" => Float64[],
-            "timestamps" => Float16[], "αs" => Int[], "total_step_attempts" => Int[],
+            "E_total" => Float64[], "E_G" => Float64[], "E_T" => Float64[],
+            "E_O" => Float64[],
+            "αs" => Int[], "total_step_attempts" => Int[],
         )
 
         # Run simulation
@@ -146,7 +146,7 @@ function run_integration_tests()
         Algorithms.simulate!(rwm, deepcopy(x_init), 60.0, 5, output)
 
         @test output["total_step_attempts"][1] == 5
-        @test length(output["Es"]) > 0
+        @test length(output["E_total"]) > 0
 
         # Test save/load
         test_file = joinpath(test_dir, "integration_test.jld2")

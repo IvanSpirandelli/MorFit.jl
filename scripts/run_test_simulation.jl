@@ -61,16 +61,15 @@ x_init = [
     (QuatRotation(1.0, 0.0, 0.0, 0.0), [30.0, 0.0, 0.0])   # ligand displaced
 ]
 
-# Output storage (keys match what energy function returns: Vs, As, Cs, Xs, OLs)
+# Output storage (keys match what energy function returns: Vs, As, Cs, Xs, E_O)
 output = Dict{String, Vector}(
     "states" => Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}(),
-    "Es" => Float64[],
+    "E_total" => Float64[],
     "Vs" => Float64[],
     "As" => Float64[],
     "Cs" => Float64[],
     "Xs" => Float64[],
-    "OLs" => Float64[],
-    "timestamps" => Float16[],
+    "E_O" => Float64[],
     "αs" => Int[],
     "total_step_attempts" => Int[],
 )
@@ -81,7 +80,7 @@ rwm = MorFit.Algorithms.RandomWalkMetropolis(energy, perturbation, β)
 
 println("Running test simulation for $target_iterations iterations...")
 MorFit.Algorithms.simulate!(rwm, deepcopy(x_init), 60.0, target_iterations, output)
-println("Done! Sampled $(length(output["Es"])) states.")
+println("Done! Sampled $(length(output["E_total"])) states.")
 
 # Save
 input = Dict(

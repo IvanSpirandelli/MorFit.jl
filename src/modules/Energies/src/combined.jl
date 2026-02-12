@@ -56,13 +56,11 @@ function calculate_combined_energy(
             num_params.delaunay_eps, precomputed.single_energies, bol_check
         )
         energy += scales.θ_G * fsol + scales.θ_O * overlap
-        measures["Es_fsol"] = fsol
-        measures["Es_overlap"] = overlap
-        measures["OLs"] = overlap
+        measures["E_G"] = fsol
+        measures["E_O"] = overlap
     else
-        measures["Es_fsol"] = 0.0
-        measures["Es_overlap"] = 0.0
-        measures["OLs"] = 0.0
+        measures["E_G"] = 0.0
+        measures["E_O"] = 0.0
     end
 
     # Topology (independent, skip if θ_T = 0)
@@ -73,9 +71,9 @@ function calculate_combined_energy(
         )
         energy += scales.θ_T * topo_energy
         merge!(measures, topo_measures)
-        measures["Es_topo"] = topo_energy
+        measures["E_T"] = topo_energy
     else
-        measures["Es_topo"] = 0.0
+        measures["E_T"] = 0.0
     end
 
     return energy, measures
@@ -123,16 +121,15 @@ function calculate_combined_energy(
             sol_params.rs, prefactors, ol_params.jump, ol_params.slope,
             num_params.delaunay_eps, precomputed.single_energies, precomputed.single_measures, bol_check
         )
-        overlap = get(fsol_measures, "OLs", 0.0)
+        overlap = get(fsol_measures, "E_O", 0.0)
         fsol_pure = fsol - overlap
         energy += scales.θ_G * fsol_pure + scales.θ_O * overlap
         merge!(measures, fsol_measures)
-        measures["Es_fsol"] = fsol_pure
-        measures["Es_overlap"] = overlap
+        measures["E_G"] = fsol_pure
+        measures["E_O"] = overlap
     else
-        measures["Es_fsol"] = 0.0
-        measures["Es_overlap"] = 0.0
-        measures["OLs"] = 0.0
+        measures["E_G"] = 0.0
+        measures["E_O"] = 0.0
     end
 
     # Topology (independent, skip if θ_T = 0)
@@ -143,9 +140,9 @@ function calculate_combined_energy(
         )
         energy += scales.θ_T * topo_energy
         merge!(measures, topo_measures)
-        measures["Es_topo"] = topo_energy
+        measures["E_T"] = topo_energy
     else
-        measures["Es_topo"] = 0.0
+        measures["E_T"] = 0.0
     end
 
     return energy, measures, updated_ccs
@@ -198,7 +195,7 @@ function calculate_combined_potential(
     # 3. Combine results (legacy μ-interpolation)
     energy = μ * fsol + (1 - μ) * tasp
     measures = merge!(fsol_measures, tasp_measures)
-    measures = merge!(measures, Dict("Es_fsol" => fsol, "Es_topo" => tasp))
+    measures = merge!(measures, Dict("E_G" => fsol, "E_T" => tasp))
     return energy, measures
 end
 
@@ -234,7 +231,7 @@ function calculate_combined_potential_with_separate_overlap(
 
     # 3. Combine results (legacy model with separate overlap)
     energy = μ * fsol + (1 - μ) * twasp + ol
-    return energy, Dict{String, Any}("Es_fsol" => fsol, "Es_topo" => twasp, "OLs" => ol)
+    return energy, Dict{String, Any}("E_G" => fsol, "E_T" => twasp, "E_O" => ol)
 end
 
 function calculate_combined_potential(
@@ -275,6 +272,6 @@ function calculate_combined_potential(
     # 3. Combine results (legacy μ-interpolation)
     energy = μ * fsol + (1 - μ) * tasp
     measures = merge!(fsol_measures, tasp_measures)
-    measures = merge!(measures, Dict("Es_fsol" => fsol, "Es_topo" => tasp))
+    measures = merge!(measures, Dict("E_G" => fsol, "E_T" => tasp))
     return energy, measures, updated_ccs
 end

@@ -57,8 +57,8 @@ function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{
 
     total_step_attempts = 1
 
-    add_to_output(merge!(measures, Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => 0.0)), output)
-    
+    add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+
     current_running_time = Dates.value(now() - start_time) / 60000.0
     while current_running_time < wall_clock_limit_minutes
         total_step_attempts += 1
@@ -69,7 +69,7 @@ function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{
             E = E_cand
             x = x_cand
             icc = deepcopy(ucc)
-            add_to_output(merge!(measures,Dict("Es" => E, "states" => x, "αs" => total_step_attempts, "timestamps" => current_running_time)), output)
+            add_to_output(merge!(measures,Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end

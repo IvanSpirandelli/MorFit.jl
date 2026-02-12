@@ -79,7 +79,7 @@ Get RMSD for the minimum energy state of a simulation.
 function get_min_rmsd(input, output)
     molecule_ids = Vector{String}(input["molecule_ids"])
     sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
-    min_energy_state = output["states"][argmin(output["Es"])]
+    min_energy_state = output["states"][argmin(output["E_total"])]
     get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
 end
 
@@ -97,7 +97,7 @@ function get_min_rmsd_cutoff(input, output, cutoff_index::Int)
         return Inf
     end
 
-    min_energy_state = output["states"][1:max_index][argmin(output["Es"][1:max_index])]
+    min_energy_state = output["states"][1:max_index][argmin(output["E_total"][1:max_index])]
     get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
 end
 

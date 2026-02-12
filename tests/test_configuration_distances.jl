@@ -110,7 +110,7 @@ function test_simulation_rmsd_calculation()
 
     # Test get_min_rmsd returns the minimum RMSD among all states
     min_rmsd = MorFit.get_min_rmsd(input, output)
-    min_energy_idx = argmin(output["Es"])
+    min_energy_idx = argmin(output["E_total"])
     @test min_rmsd ≈ rmsds[min_energy_idx]
 
     # Test get_min_rmsd_cutoff with a cutoff
