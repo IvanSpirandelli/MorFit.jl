@@ -133,23 +133,20 @@ function run_integration_tests()
         ]
 
         # Output storage
-        output = Dict{String, Vector}(
-            "states" => Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}(),
-            "E_total" => Float64[], "E_G" => Float64[], "E_T" => Float64[],
-            "E_O" => Float64[],
-            "αs" => Int[], "total_step_attempts" => Int[],
-        )
+        output = Algorithms.SimulationOutput()
 
         # Run simulation
         β = 1.0 / 1.3  # temperature = 1.3
         rwm = Algorithms.RandomWalkMetropolis(energy_fn, perturbation_fn, β)
         Algorithms.simulate!(rwm, deepcopy(x_init), 60.0, 5, output)
 
-        @test output["total_step_attempts"][1] == 5
-        @test length(output["E_total"]) > 0
+        @test output.total_step_attempts == 5
+        @test length(output.E_total) > 0
+        @test haskey(output.measures, "E_G")
 
-        # Test save/load
+        # Test save/load round-trip via to_dict
         test_file = joinpath(test_dir, "integration_test.jld2")
+        output_dict = Algorithms.to_dict(output)
         input_data = Dict(
             "molecule_ids" => molecule_ids,
             "centers" => centers, "radii" => radii,
@@ -158,14 +155,19 @@ function run_integration_tests()
             "wall_clock_limit_minutes" => 60.0,
             "x_init" => x_init,
         )
-        @save test_file input=input_data output
+        @save test_file input=input_data output=output_dict
 
         @test isfile(test_file)
 
-        # Load and verify
-        @load test_file input output
-        @test input["molecule_ids"] == molecule_ids
-        @test output["total_step_attempts"][1] == 5
+        # Load and verify dict round-trip
+        loaded = JLD2.load(test_file)
+        @test loaded["input"]["molecule_ids"] == molecule_ids
+        @test loaded["output"]["total_step_attempts"][1] == 5
+
+        # Verify SimulationOutput reconstruction from dict
+        reconstructed = Algorithms.SimulationOutput(loaded["output"])
+        @test reconstructed.total_step_attempts == 5
+        @test reconstructed.E_total == output.E_total
     end
 
     # Cleanup

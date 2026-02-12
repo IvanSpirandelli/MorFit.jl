@@ -61,18 +61,8 @@ x_init = [
     (QuatRotation(1.0, 0.0, 0.0, 0.0), [30.0, 0.0, 0.0])   # ligand displaced
 ]
 
-# Output storage (keys match what energy function returns: Vs, As, Cs, Xs, E_O)
-output = Dict{String, Vector}(
-    "states" => Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}(),
-    "E_total" => Float64[],
-    "Vs" => Float64[],
-    "As" => Float64[],
-    "Cs" => Float64[],
-    "Xs" => Float64[],
-    "E_O" => Float64[],
-    "αs" => Int[],
-    "total_step_attempts" => Int[],
-)
+# Output storage (SimulationOutput auto-captures all energy function measures)
+output = MorFit.Algorithms.SimulationOutput()
 
 # Run simulation
 β = 1.0 / temperature
@@ -80,7 +70,7 @@ rwm = MorFit.Algorithms.RandomWalkMetropolis(energy, perturbation, β)
 
 println("Running test simulation for $target_iterations iterations...")
 MorFit.Algorithms.simulate!(rwm, deepcopy(x_init), 60.0, target_iterations, output)
-println("Done! Sampled $(length(output["E_total"])) states.")
+println("Done! Sampled $(length(output.E_total)) states.")
 
 # Save
 input = Dict(
@@ -105,5 +95,6 @@ output_dir = joinpath(@__DIR__, "../../simulation-results")
 mkpath(output_dir)
 output_file = joinpath(output_dir, "test.jld2")
 
-@save output_file input output
+output_dict = MorFit.Algorithms.to_dict(output)
+@save output_file input output=output_dict
 println("Saved to $output_file")

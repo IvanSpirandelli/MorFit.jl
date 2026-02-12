@@ -75,6 +75,7 @@ end
     get_min_rmsd(input, output)
 
 Get RMSD for the minimum energy state of a simulation.
+Accepts both Dict and SimulationOutput for `output`.
 """
 function get_min_rmsd(input, output)
     molecule_ids = Vector{String}(input["molecule_ids"])
@@ -83,10 +84,18 @@ function get_min_rmsd(input, output)
     get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
 end
 
+function get_min_rmsd(input, output::Algorithms.SimulationOutput)
+    molecule_ids = Vector{String}(input["molecule_ids"])
+    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
+    min_energy_state = output.states[argmin(output.E_total)]
+    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
+end
+
 """
     get_min_rmsd_cutoff(input, output, cutoff_index)
 
 Get RMSD for minimum energy state up to a given iteration cutoff.
+Accepts both Dict and SimulationOutput for `output`.
 """
 function get_min_rmsd_cutoff(input, output, cutoff_index::Int)
     molecule_ids = Vector{String}(input["molecule_ids"])
@@ -98,6 +107,19 @@ function get_min_rmsd_cutoff(input, output, cutoff_index::Int)
     end
 
     min_energy_state = output["states"][1:max_index][argmin(output["E_total"][1:max_index])]
+    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
+end
+
+function get_min_rmsd_cutoff(input, output::Algorithms.SimulationOutput, cutoff_index::Int)
+    molecule_ids = Vector{String}(input["molecule_ids"])
+    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
+
+    max_index = findlast(x -> x <= cutoff_index, output.αs)
+    if isnothing(max_index)
+        return Inf
+    end
+
+    min_energy_state = output.states[1:max_index][argmin(output.E_total[1:max_index])]
     get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
 end
 

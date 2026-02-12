@@ -15,7 +15,8 @@ algorithm = RandomWalkMetropolis(
     x -> perturb_single_randomly_chosen(x, σ_r, σ_t),
     1.0
 )
-output = simulate!(algorithm, initial_state, 60.0, 100000, Dict{String,Vector}())
+output = SimulationOutput()
+simulate!(algorithm, initial_state, 60.0, 100000, output)
 ```
 """
 struct RandomWalkMetropolis{E, P}
@@ -25,7 +26,7 @@ struct RandomWalkMetropolis{E, P}
 end
 
 """
-    simulate!(algorithm::RandomWalkMetropolis, x, wall_clock_limit_minutes, target_iterations, output) -> output
+    simulate!(algorithm::RandomWalkMetropolis, x, wall_clock_limit_minutes, target_iterations, output::SimulationOutput) -> output
 
 Run a fresh RWM simulation starting from state `x`.
 
@@ -34,16 +35,16 @@ Run a fresh RWM simulation starting from state `x`.
 - `x`: Initial state as `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
 - `wall_clock_limit_minutes`: Maximum wall-clock time to run
 - `target_iterations`: Maximum number of MCMC steps
-- `output`: Dictionary to store results (will be populated with trajectory data)
+- `output`: SimulationOutput to store results
 
-# Output Dictionary Keys
-- `"E_total"`: Accepted energy values
-- `"states"`: Accepted configurations
-- `"αs"`: Step number at each acceptance
-- `"total_step_attempts"`: Total MCMC steps attempted
-- Plus any keys from the energy function's measures dict
+# Output Fields
+- `output.E_total`: Accepted energy values
+- `output.states`: Accepted configurations
+- `output.αs`: Step number at each acceptance
+- `output.total_step_attempts`: Total MCMC steps attempted
+- `output.measures`: Auto-expanded energy component measures
 """
-function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, target_iterations::Int, output::Dict{String, Vector})
+function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput)
     start_time = now()
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -53,7 +54,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
 
     total_step_attempts = 1
 
-    add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+    record!(output, E, x, total_step_attempts, measures)
 
     current_running_time = Dates.value(now() - start_time) / 60000.0
     while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
@@ -62,34 +63,31 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
         E_cand, measures = energy(x_cand)
 
         if rand() < exp(-β*(E_cand - E))
-            # The idea is that at entry i of the array it says at which number of steps m it was accepted. Giving i/m acceptance rate
             E = E_cand
             x = x_cand
-            add_to_output(merge!(measures,Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+            record!(output, E, x, total_step_attempts, measures)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
-    add_to_output(Dict("total_step_attempts" => total_step_attempts), output)
+    output.total_step_attempts = total_step_attempts
     return output
 end
 
 """
-    simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, output::Dict{String, Vector}) -> (input, output)
+    simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes, target_iterations, output::SimulationOutput) -> output
 
-Resume an RWM simulation from previous output.
+Resume an RWM simulation from previous SimulationOutput.
 
-Continues from the last accepted state in `output`, extending the trajectory.
+Continues from the last accepted state, extending the trajectory.
 
 # Arguments
 - `algorithm`: The RWM algorithm with energy, perturbation, and β
-- `input`: Dictionary with `"wall_clock_limit_minutes"` and `"target_iterations"`
-- `output`: Previous simulation output to continue from
-
-# Returns
-Tuple of (input, output) with updated output dictionary.
+- `wall_clock_limit_minutes`: Maximum wall-clock time for this continuation
+- `target_iterations`: Maximum total MCMC steps (including previous run)
+- `output`: Previous SimulationOutput to continue from (must have previous states)
 """
-function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, output::Dict{String, Vector})
-    if length(output["states"]) == 0
+function simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput)
+    if isempty(output.states)
         throw(ArgumentError("output must contain previous simulation states"))
     end
 
@@ -98,13 +96,13 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
     β = algorithm.β
 
     start_time = now()
-    x = deepcopy(output["states"][end])
-    E = output["E_total"][end]
+    x = deepcopy(output.states[end])
+    E = output.E_total[end]
 
-    total_step_attempts = output["total_step_attempts"][1]
+    total_step_attempts = output.total_step_attempts
 
     current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < input["wall_clock_limit_minutes"] && total_step_attempts < input["target_iterations"]
+    while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
@@ -112,10 +110,10 @@ function simulate!(algorithm::RandomWalkMetropolis, input::Dict{String, Any}, ou
         if rand() < exp(-β*(E_cand - E))
             E = E_cand
             x = x_cand
-            add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+            record!(output, E, x, total_step_attempts, measures)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
-    output["total_step_attempts"] = [total_step_attempts]
-    return input, output
+    output.total_step_attempts = total_step_attempts
+    return output
 end

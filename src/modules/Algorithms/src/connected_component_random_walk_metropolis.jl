@@ -31,7 +31,7 @@ struct ConnectedComponentRandomWalkMetropolis{E, P, ICC}
 end
 
 """
-    simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x, wall_clock_limit_minutes, output) -> output
+    simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x, wall_clock_limit_minutes, output::SimulationOutput) -> output
 
 Run a connected component RWM simulation starting from state `x`.
 
@@ -39,12 +39,12 @@ Run a connected component RWM simulation starting from state `x`.
 - `algorithm`: The CC-RWM algorithm
 - `x`: Initial state as `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
 - `wall_clock_limit_minutes`: Maximum wall-clock time to run
-- `output`: Dictionary to store results
+- `output`: SimulationOutput to store results
 
-# Output Dictionary Keys
+# Output Fields
 Same as `RandomWalkMetropolis`, plus any connected component measures.
 """
-function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, output::Dict{String, Vector})
+function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, output::SimulationOutput)
     start_time = now()
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -57,7 +57,7 @@ function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{
 
     total_step_attempts = 1
 
-    add_to_output(merge!(measures, Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+    record!(output, E, x, total_step_attempts, measures)
 
     current_running_time = Dates.value(now() - start_time) / 60000.0
     while current_running_time < wall_clock_limit_minutes
@@ -69,10 +69,10 @@ function simulate!(algorithm::ConnectedComponentRandomWalkMetropolis, x::Vector{
             E = E_cand
             x = x_cand
             icc = deepcopy(ucc)
-            add_to_output(merge!(measures,Dict("E_total" => E, "states" => x, "αs" => total_step_attempts)), output)
+            record!(output, E, x, total_step_attempts, measures)
         end
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
-    add_to_output(Dict("total_step_attempts" => total_step_attempts), output)
+    output.total_step_attempts = total_step_attempts
     return output
 end

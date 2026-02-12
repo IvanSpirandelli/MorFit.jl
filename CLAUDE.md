@@ -68,10 +68,60 @@ get_realization(x, templates, format=:flat)      # Vector{Float64}
 get_realization(x, templates, format=:points)    # Vector{Vector{Float64}}
 ```
 
+## Simulation I/O
+
+Defined in `src/modules/Algorithms/src/simulation_io.jl`:
+
+### SimulationOutput
+
+Structured output container replacing manual `Dict{String, Vector}` initialization:
+
+```julia
+output = Algorithms.SimulationOutput()
+simulate!(rwm, x_init, 60.0, 10000, output)
+output.total_step_attempts  # scalar Int
+output.E_total              # Vector{Float64}
+output.measures["E_G"]      # Vector{Float64} (auto-created)
+```
+
+- `record!(output, E, state, step, measures)` — auto-expanding, no pre-initialization
+- `to_dict(output)` → `Dict{String, Vector}` for JLD2 serialization
+- `SimulationOutput(d::Dict{String, Vector})` — reconstruct from saved Dict (legacy compatible)
+
+### build_input_dict
+
+Canonical function to assemble the input/config dictionary for saving:
+
+```julia
+saved_config = Algorithms.build_input_dict(
+    molecule_ids=..., system=..., sol_params=..., ol_params=...,
+    topo_params=..., num_params=..., scales=..., pert_params=...,
+    perturbation=..., T_sim=..., wall_clock_limit_minutes=...,
+    target_iterations=..., x_init=..., seed=...,
+)
+```
+
+### Resume API
+
+```julia
+# Fresh start
+simulate!(rwm, x_init, wall_clock_limit, target_iters, output)
+# Resume from previous output
+simulate!(rwm, wall_clock_limit, target_iters, output)
+```
+
 ## Related Repositories
 
 - `mor-fit-hpc` - HPC simulation runner (uses MorFit.jl)
 - `mor-fit-analysis` - Visualization and analysis notebooks
+
+## Recent Changes (2026-02-12)
+
+- Replaced `Dict{String, Vector}` output with `SimulationOutput` struct
+- Removed `add_to_output` — replaced by `record!` with auto-expanding measures
+- Added `build_input_dict` to centralize input dict assembly
+- Resume API: `simulate!(rwm, time, iters, output)` instead of passing Dict
+- Backward compatible: `to_dict`/`SimulationOutput(dict)` round-trip preserves JLD2 format
 
 ## Recent Changes (2026-02-03)
 
