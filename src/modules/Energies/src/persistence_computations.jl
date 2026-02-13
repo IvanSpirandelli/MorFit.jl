@@ -91,9 +91,18 @@ function _calculate_persistence_energy(pdgm, persistence_weights::Vector{Float64
     p0 = get_total_persistence(pdgm[1])
     p1 = get_total_persistence(pdgm[2])
     p2 = get_total_persistence(pdgm[3])
-    
+
     λ0, λ1, λ2 = persistence_weights
     persistence_energy = λ0 * p0 + λ1 * p1 + λ2 * p2
 
     return persistence_energy
+end
+
+function point_cloud_persistence_energy(
+    points::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
+    exact_delaunay::Bool=false
+)
+    pdgm = get_alpha_shape_persistence_diagram(points, exact_delaunay)
+    return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
 end

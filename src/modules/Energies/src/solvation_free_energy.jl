@@ -38,6 +38,10 @@ function in_bounds(x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, bou
     all(all(0.0 <= e <= bounds for e in t) for (_,t) in x)
 end
 
+function in_bounds(x::Vector{Vector{Float64}}, bounds::Float64)
+    all(all(0.0 <= c <= bounds for c in point) for point in x)
+end
+
 function _prepare_args(centers::Vector{Matrix{Float64}}, radii::Vector{Vector{Float64}})
     n_atoms_per_mol = [size(tc, 2) for tc in centers]
     flat_radii = vcat(radii...)

@@ -26,13 +26,13 @@ struct RandomWalkMetropolis{E, P}
 end
 
 """
-    simulate!(algorithm::RandomWalkMetropolis, x, wall_clock_limit_minutes, target_iterations, output::SimulationOutput) -> output
+    simulate!(algorithm::RandomWalkMetropolis, x::S, wall_clock_limit_minutes, target_iterations, output::SimulationOutput{S}) -> output
 
 Run a fresh RWM simulation starting from state `x`.
 
 # Arguments
 - `algorithm`: The RWM algorithm with energy, perturbation, and β
-- `x`: Initial state as `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
+- `x::S`: Initial state (molecular or point cloud)
 - `wall_clock_limit_minutes`: Maximum wall-clock time to run
 - `target_iterations`: Maximum number of MCMC steps
 - `output`: SimulationOutput to store results
@@ -44,7 +44,7 @@ Run a fresh RWM simulation starting from state `x`.
 - `output.total_step_attempts`: Total MCMC steps attempted
 - `output.measures`: Auto-expanded energy component measures
 """
-function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput)
+function simulate!(algorithm::RandomWalkMetropolis, x::S, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput{S}) where S
     start_time = now()
     energy = algorithm.energy
     perturbation = algorithm.perturbation
@@ -74,7 +74,7 @@ function simulate!(algorithm::RandomWalkMetropolis, x::Vector{Tuple{QuatRotation
 end
 
 """
-    simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes, target_iterations, output::SimulationOutput) -> output
+    simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes, target_iterations, output::SimulationOutput{S}) -> output
 
 Resume an RWM simulation from previous SimulationOutput.
 
@@ -86,7 +86,7 @@ Continues from the last accepted state, extending the trajectory.
 - `target_iterations`: Maximum total MCMC steps (including previous run)
 - `output`: Previous SimulationOutput to continue from (must have previous states)
 """
-function simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput)
+function simulate!(algorithm::RandomWalkMetropolis, wall_clock_limit_minutes::Float64, target_iterations::Int, output::SimulationOutput{S}) where S
     if isempty(output.states)
         throw(ArgumentError("output must contain previous simulation states"))
     end

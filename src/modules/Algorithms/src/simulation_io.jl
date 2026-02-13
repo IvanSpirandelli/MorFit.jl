@@ -6,13 +6,17 @@
 =============================================================================#
 
 """
-    SimulationOutput
+    SimulationOutput{S}
 
 Structured output container for MCMC simulation trajectories.
 
 Fixed fields store the core simulation data (states, energies, acceptance).
 The `measures` dict auto-expands to capture any key returned by the energy
 function — no pre-initialization needed.
+
+The type parameter `S` is the state type:
+- Molecular: `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
+- Point cloud: `Vector{Vector{Float64}}`
 
 # Fields
 - `states`: Accepted configurations (one per acceptance event)
@@ -31,8 +35,8 @@ output.E_total              # Vector{Float64}
 output.measures["E_G"]      # Vector{Float64} (auto-created)
 ```
 """
-mutable struct SimulationOutput
-    states::Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}
+mutable struct SimulationOutput{S}
+    states::Vector{S}
     E_total::Vector{Float64}
     αs::Vector{Int}
     total_step_attempts::Int
@@ -40,14 +44,33 @@ mutable struct SimulationOutput
     metadata::Dict{String, Any}
 end
 
+# Molecular state type alias for convenience
+const MolecularState = Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
+
 """
     SimulationOutput()
 
-Create an empty SimulationOutput ready to receive simulation data.
+Create an empty SimulationOutput with molecular state type (backward compatible).
 """
 function SimulationOutput()
-    SimulationOutput(
-        Vector{Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}}(),
+    SimulationOutput{MolecularState}(
+        Vector{MolecularState}(),
+        Float64[],
+        Int[],
+        0,
+        Dict{String, Vector{Float64}}(),
+        Dict{String, Any}(),
+    )
+end
+
+"""
+    SimulationOutput{S}()
+
+Create an empty SimulationOutput for state type S.
+"""
+function SimulationOutput{S}() where S
+    SimulationOutput{S}(
+        Vector{S}(),
         Float64[],
         Int[],
         0,
@@ -68,7 +91,14 @@ Float64 vectors (other than fixed fields) go to `measures`.
 Everything else goes to `metadata`.
 """
 function SimulationOutput(d::Dict{String, Vector})
-    output = SimulationOutput()
+    # Infer state type from stored data
+    if haskey(d, "states") && !isempty(d["states"])
+        S = eltype(d["states"])
+    else
+        S = MolecularState
+    end
+
+    output = SimulationOutput{S}()
 
     # Fixed fields
     if haskey(d, "states")
@@ -103,7 +133,7 @@ function SimulationOutput(d::Dict{String, Vector})
 end
 
 """
-    record!(output::SimulationOutput, E, state, step, measures)
+    record!(output::SimulationOutput{S}, E, state, step, measures) where S
 
 Record an accepted MCMC step into the output.
 
@@ -114,13 +144,12 @@ No pre-initialization required.
 # Arguments
 - `output`: The simulation output container
 - `E::Float64`: Total energy of the accepted state
-- `state`: The accepted configuration
+- `state::S`: The accepted configuration
 - `step::Int`: The MCMC step number at which acceptance occurred
 - `measures::Dict`: Energy component measures from the energy function
 """
-function record!(output::SimulationOutput, E::Float64,
-                 state::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-                 step::Int, measures::Dict)
+function record!(output::SimulationOutput{S}, E::Float64,
+                 state::S, step::Int, measures::Dict) where S
     push!(output.E_total, E)
     push!(output.states, state)
     push!(output.αs, step)
@@ -196,6 +225,43 @@ function build_input_dict(;
         "θ_G" => scales.θ_G, "θ_O" => scales.θ_O, "θ_T" => scales.θ_T,
         "σ_r" => pert_params.σ_r, "σ_t" => pert_params.σ_t,
         "perturbation" => perturbation,
+        "T_sim" => T_sim,
+        "wall_clock_limit_minutes" => wall_clock_limit_minutes,
+        "target_iterations" => target_iterations,
+        "x_init" => x_init,
+    )
+    if seed >= 0
+        d["seed"] = seed
+    end
+    return d
+end
+
+"""
+    build_input_dict_point_cloud(; n_points, bounds, persistence_weights,
+                                   exact_delaunay, σ_t, T_sim,
+                                   wall_clock_limit_minutes, target_iterations,
+                                   x_init, seed)
+
+Build the input/config dictionary for point cloud simulations.
+"""
+function build_input_dict_point_cloud(;
+    n_points,
+    bounds,
+    persistence_weights,
+    exact_delaunay,
+    σ_t,
+    T_sim,
+    wall_clock_limit_minutes,
+    target_iterations,
+    x_init,
+    seed=-1,
+)
+    d = Dict{String, Any}(
+        "n_points" => n_points,
+        "bounds" => bounds,
+        "persistence_weights" => persistence_weights,
+        "exact_delaunay" => exact_delaunay,
+        "σ_t" => σ_t,
         "T_sim" => T_sim,
         "wall_clock_limit_minutes" => wall_clock_limit_minutes,
         "target_iterations" => target_iterations,

@@ -5,3 +5,7 @@ end
 function initialize_inhibitor_and_target(bounds::Float64)
    [(QuatRotation(exp(Rotations.RotationVecGenerator(randn(3)...))), [rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds))]), (QuatRotation(exp(Rotations.RotationVecGenerator(0.0, 0.0, 0.0))), [bounds * 0.5, bounds * 0.5, bounds * 0.5])]
 end
+
+function get_initial_point_cloud(n_points::Int, bounds::Float64)
+    [rand(Uniform(0.0, bounds), 3) for _ in 1:n_points]
+end
