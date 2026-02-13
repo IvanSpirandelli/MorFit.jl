@@ -110,10 +110,34 @@ simulate!(rwm, x_init, wall_clock_limit, target_iters, output)
 simulate!(rwm, wall_clock_limit, target_iters, output)
 ```
 
+## Simulated Annealing
+
+Defined in `src/modules/Algorithms/src/simulated_annealing.jl`:
+
+```julia
+sa = Algorithms.SimulatedAnnealing(energy, perturbation, schedule, T_init, σ_t_init)
+simulate!(sa, x_init, 60.0, 10000, output)
+```
+
+**Key differences from RWM:**
+- `perturbation` signature is `(state, σ_t) -> new_state` (not `(state) -> new_state`)
+- Step size scales with temperature: `σ_t = σ_t_init * √(T/T_init)` (Langevin dynamics)
+- `schedule` is `(step, total_steps) -> T` — any cooling function works (e.g., `quadratic_additive`)
+- Tracks best state in `output.metadata["best_state"]`, `["best_energy"]`, `["best_step"]`
+- Records `"T"` and `"σ_t"` in measures at each acceptance
+
+Resume API is the same as RWM: `simulate!(sa, wall_clock_limit, target_iters, output)`.
+
 ## Related Repositories
 
 - `mor-fit-hpc` - HPC simulation runner (uses MorFit.jl)
 - `mor-fit-analysis` - Visualization and analysis notebooks
+
+## Recent Changes (2026-02-13)
+
+- Added `SimulatedAnnealing` algorithm with cooling schedule and adaptive step size
+- SA perturbation contract: `(state, σ_t) -> new_state` (differs from RWM's `(state) -> new_state`)
+- Best-state tracking in metadata for optimization use cases
 
 ## Recent Changes (2026-02-12)
 
