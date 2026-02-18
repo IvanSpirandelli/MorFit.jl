@@ -15,7 +15,7 @@ step size σ_t scaling as `σ_t_init * √(T/T_init)` (Langevin dynamics justifi
 
 # Example
 ```julia
-schedule = (step, total) -> quadratic_additive(Float64(step), Float64(total), 10.0, 0.01)
+schedule = (step, total) -> quadratic_additive(step, total, 10.0, 0.01)
 algorithm = SimulatedAnnealing(
     x -> my_energy(x),
     (x, σ) -> perturb_single_point(x, σ),

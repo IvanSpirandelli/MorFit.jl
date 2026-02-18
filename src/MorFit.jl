@@ -56,6 +56,8 @@ function get_rmsd_to_ground_truth(
         return Inf
     end
 
+    # The RMSD calculation expects unrealized coordinates and rigid transformations, but our reference assemblies are already realized coordinates.
+    # Therefore we pass the identity stats.
     ref_assemblies = EXPERIMENTAL_ASSEMBLIES[molecule_ids]
     identity_state = [(QuatRotation(1.0, 0.0, 0.0, 0.0), [0.0, 0.0, 0.0]) for _ in 1:length(molecule_ids)]
 
