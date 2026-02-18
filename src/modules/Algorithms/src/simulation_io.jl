@@ -42,6 +42,7 @@ mutable struct SimulationOutput{S}
     total_step_attempts::Int
     measures::Dict{String, Vector{Float64}}
     metadata::Dict{String, Any}
+    track_best_only::Bool
 end
 
 # Molecular state type alias for convenience
@@ -52,7 +53,7 @@ const MolecularState = Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
 
 Create an empty SimulationOutput with molecular state type (backward compatible).
 """
-function SimulationOutput()
+function SimulationOutput(; track_best_only::Bool=false)
     SimulationOutput{MolecularState}(
         Vector{MolecularState}(),
         Float64[],
@@ -60,6 +61,7 @@ function SimulationOutput()
         0,
         Dict{String, Vector{Float64}}(),
         Dict{String, Any}(),
+        track_best_only,
     )
 end
 
@@ -68,7 +70,7 @@ end
 
 Create an empty SimulationOutput for state type S.
 """
-function SimulationOutput{S}() where S
+function SimulationOutput{S}(; track_best_only::Bool=false) where S
     SimulationOutput{S}(
         Vector{S}(),
         Float64[],
@@ -76,6 +78,7 @@ function SimulationOutput{S}() where S
         0,
         Dict{String, Vector{Float64}}(),
         Dict{String, Any}(),
+        track_best_only,
     )
 end
 
@@ -98,7 +101,7 @@ function SimulationOutput(d::Dict{String, Vector})
         S = MolecularState
     end
 
-    output = SimulationOutput{S}()
+    output = SimulationOutput{S}(track_best_only=false)
 
     # Fixed fields
     if haskey(d, "states")
@@ -150,14 +153,31 @@ No pre-initialization required.
 """
 function record!(output::SimulationOutput{S}, E::Float64,
                  state::S, step::Int, measures::Dict) where S
-    push!(output.E_total, E)
-    push!(output.states, state)
-    push!(output.αs, step)
-    for (k, v) in measures
-        if !haskey(output.measures, k)
-            output.measures[k] = Float64[]
+    if output.track_best_only
+        # Only keep: n_accepted count (via αs length), best state, initial/final E
+        push!(output.αs, step)
+        best_E = get(output.metadata, "best_energy", Inf)
+        if E < best_E
+            output.metadata["best_energy"] = E
+            output.metadata["best_state"] = state
+            output.metadata["best_step"] = step
+            output.metadata["best_measures"] = measures
         end
-        push!(output.measures[k], v)
+        # Track initial and final energy (overwrite final each time)
+        if length(output.αs) == 1
+            output.metadata["initial_E"] = E
+        end
+        output.metadata["final_E"] = E
+    else
+        push!(output.E_total, E)
+        push!(output.states, state)
+        push!(output.αs, step)
+        for (k, v) in measures
+            if !haskey(output.measures, k)
+                output.measures[k] = Float64[]
+            end
+            push!(output.measures[k], v)
+        end
     end
 end
 
