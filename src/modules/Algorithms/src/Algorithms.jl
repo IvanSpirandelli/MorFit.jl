@@ -24,4 +24,5 @@ module Algorithms
     include("random_walk_metropolis.jl")
     include("connected_component_random_walk_metropolis.jl")
     include("simulated_annealing.jl")
+    include("calibrate_temperature.jl")
 end
