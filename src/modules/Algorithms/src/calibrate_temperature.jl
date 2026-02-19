@@ -1,6 +1,6 @@
 """
     calibrate_T_init(energy, perturbation, σ_t, x_init, T_candidates;
-                     n_steps=1000, target_acceptance=0.8) -> T_init
+                     n_steps=3000, target_acceptance=0.8) -> T_init
 
 Calibrate the initial temperature for Simulated Annealing by running short
 RWM warmup runs at each candidate temperature with fixed step size `σ_t`.
@@ -18,7 +18,7 @@ candidate temperature closest to the target rate.
 - `T_candidates::Vector{Float64}`: Temperatures to probe (must be sorted ascending)
 
 # Keyword Arguments
-- `n_steps::Int=1000`: Number of RWM steps per candidate temperature
+- `n_steps::Int=3000`: Number of RWM steps per candidate temperature
 - `target_acceptance::Float64=0.8`: Desired acceptance rate
 
 # Returns
@@ -36,7 +36,7 @@ sa = SimulatedAnnealing(energy, perturbation, schedule, T_init, 2.5)
 """
 function calibrate_T_init(
     energy, perturbation, σ_t::Float64, x_init::S, T_candidates::Vector{Float64};
-    n_steps::Int=1000, target_acceptance::Float64=0.8
+    n_steps::Int=3000, target_acceptance::Float64=0.8
 ) where S
     acceptance_rates = Float64[]
 
