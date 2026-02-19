@@ -56,6 +56,8 @@ Run a fresh Simulated Annealing simulation starting from state `x`.
 - `output.metadata["best_state"]`: Best state found
 - `output.metadata["best_energy"]`: Lowest energy found
 - `output.metadata["best_step"]`: Step at which best energy was found
+- `output.metadata["all_T"]`: Temperature at every step (length = total_step_attempts)
+- `output.metadata["all_E"]`: Current energy at every step (after accept/reject)
 """
 function simulate!(alg::SimulatedAnnealing, x::S, wall_clock_limit_minutes::Float64,
                    target_iterations::Int, output::SimulationOutput{S}) where S
@@ -71,9 +73,19 @@ function simulate!(alg::SimulatedAnnealing, x::S, wall_clock_limit_minutes::Floa
     total_step_attempts = 1
     T = schedule(total_step_attempts, target_iterations)
     σ_t = σ_t_init * sqrt(T / T_init)
-    sa_measures = merge(measures, Dict{String,Any}("T" => T, "σ_t" => σ_t))
 
-    record!(output, E, x, total_step_attempts, sa_measures)
+    # Mutate measures in-place instead of allocating a new Dict via merge
+    measures["T"] = T
+    measures["σ_t"] = σ_t
+    record!(output, E, x, total_step_attempts, measures)
+
+    # Per-step tracking for debugging (T and E at every step, not just accepted)
+    all_T = Float64[]
+    all_E = Float64[]
+    sizehint!(all_T, target_iterations)
+    sizehint!(all_E, target_iterations)
+    push!(all_T, T)
+    push!(all_E, E)
 
     # Track best state
     best_state = deepcopy(x)
@@ -93,8 +105,9 @@ function simulate!(alg::SimulatedAnnealing, x::S, wall_clock_limit_minutes::Floa
         if rand() < exp(-β * (E_cand - E))
             E = E_cand
             x = x_cand
-            sa_measures = merge(measures, Dict{String,Any}("T" => T, "σ_t" => σ_t))
-            record!(output, E, x, total_step_attempts, sa_measures)
+            measures["T"] = T
+            measures["σ_t"] = σ_t
+            record!(output, E, x, total_step_attempts, measures)
 
             if E < best_energy
                 best_energy = E
@@ -102,6 +115,9 @@ function simulate!(alg::SimulatedAnnealing, x::S, wall_clock_limit_minutes::Floa
                 best_step = total_step_attempts
             end
         end
+
+        push!(all_T, T)
+        push!(all_E, E)
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
 
@@ -109,6 +125,8 @@ function simulate!(alg::SimulatedAnnealing, x::S, wall_clock_limit_minutes::Floa
     output.metadata["best_state"] = best_state
     output.metadata["best_energy"] = best_energy
     output.metadata["best_step"] = best_step
+    output.metadata["all_T"] = all_T
+    output.metadata["all_E"] = all_E
     return output
 end
 
@@ -118,7 +136,8 @@ end
 Resume a Simulated Annealing simulation from previous SimulationOutput.
 
 Continues from the last accepted state, extending the step counter from
-`output.total_step_attempts`.
+`output.total_step_attempts`. Per-step tracking vectors (`all_T`, `all_E`)
+are restored from metadata and extended.
 
 # Arguments
 - `alg`: The SA algorithm
@@ -149,6 +168,13 @@ function simulate!(alg::SimulatedAnnealing, wall_clock_limit_minutes::Float64,
     best_energy = get(output.metadata, "best_energy", E)
     best_step = get(output.metadata, "best_step", total_step_attempts)
 
+    # Restore per-step tracking; extend from previous run
+    all_T = get(output.metadata, "all_T", Float64[])::Vector{Float64}
+    all_E = get(output.metadata, "all_E", Float64[])::Vector{Float64}
+    remaining = target_iterations - total_step_attempts
+    sizehint!(all_T, length(all_T) + remaining)
+    sizehint!(all_E, length(all_E) + remaining)
+
     current_running_time = Dates.value(now() - start_time) / 60000.0
     while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
@@ -162,8 +188,9 @@ function simulate!(alg::SimulatedAnnealing, wall_clock_limit_minutes::Float64,
         if rand() < exp(-β * (E_cand - E))
             E = E_cand
             x = x_cand
-            sa_measures = merge(measures, Dict{String,Any}("T" => T, "σ_t" => σ_t))
-            record!(output, E, x, total_step_attempts, sa_measures)
+            measures["T"] = T
+            measures["σ_t"] = σ_t
+            record!(output, E, x, total_step_attempts, measures)
 
             if E < best_energy
                 best_energy = E
@@ -171,6 +198,9 @@ function simulate!(alg::SimulatedAnnealing, wall_clock_limit_minutes::Float64,
                 best_step = total_step_attempts
             end
         end
+
+        push!(all_T, T)
+        push!(all_E, E)
         current_running_time = Dates.value(now() - start_time) / 60000.0
     end
 
@@ -178,5 +208,7 @@ function simulate!(alg::SimulatedAnnealing, wall_clock_limit_minutes::Float64,
     output.metadata["best_state"] = best_state
     output.metadata["best_energy"] = best_energy
     output.metadata["best_step"] = best_step
+    output.metadata["all_T"] = all_T
+    output.metadata["all_E"] = all_E
     return output
 end
