@@ -100,6 +100,17 @@ function point_cloud_persistence_energy(
     return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
 end
 
+function point_cloud_periodic_persistence_energy(
+    points::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
+    box_lower::Vector{Float64},
+    box_upper::Vector{Float64},
+    exact_delaunay::Bool=false
+)
+    pdgm = get_periodic_alpha_shape_persistence_diagram(points, box_lower, box_upper, exact_delaunay)
+    return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
+end
+
 function point_cloud_persistence_energy_with_edge_penalty(
     points::Vector{Vector{Float64}},
     persistence_weights::Vector{Float64},

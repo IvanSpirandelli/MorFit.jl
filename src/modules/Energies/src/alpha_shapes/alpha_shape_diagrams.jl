@@ -96,6 +96,53 @@ function get_weighted_alpha_shape_persistence_diagram_and_edges(points, radii, e
     return diagrams, edge_tuples
 end
 
+function get_periodic_alpha_shape_persistence_diagram(points, box_lower, box_upper, exact = false)
+    py"""
+    import oineus as oin
+    import numpy as np
+    import diode
+
+    def get_periodic_alpha_shape_persistence_diagram(points, box_lower, box_upper, exact):
+        points = np.asarray(points)
+        box_lower = [float(x) for x in box_lower]
+        box_upper = [float(x) for x in box_upper]
+        simplices = diode.fill_periodic_alpha_shapes(points, exact=exact, **{'from': box_lower, 'to': box_upper})
+        fil = oin.Filtration([oin.Simplex(s[0], s[1]) for s in simplices])
+
+        dcmp = oin.Decomposition(fil, True)
+        params = oin.ReductionParams()
+        dcmp.reduce(params)
+        dgm = dcmp.diagram(fil, include_inf_points=False)
+        return dgm
+    """
+    pasds = py"get_periodic_alpha_shape_persistence_diagram"(points, box_lower, box_upper, exact)
+    [pasds[1], pasds[2], pasds[3]]
+end
+
+function get_weighted_periodic_alpha_shape_persistence_diagram(points, radii, box_lower, box_upper, exact = false)
+    py"""
+    import oineus as oin
+    import numpy as np
+    import diode
+
+    def get_weighted_periodic_alpha_shape_persistence_diagram(points, box_lower, box_upper, exact):
+        points = np.asarray(points)
+        box_lower = [float(x) for x in box_lower]
+        box_upper = [float(x) for x in box_upper]
+        simplices = diode.fill_weighted_periodic_alpha_shapes(points, exact=exact, **{'from': box_lower, 'to': box_upper})
+        fil = oin.Filtration([oin.Simplex(s[0], s[1]) for s in simplices])
+
+        dcmp = oin.Decomposition(fil, True)
+        params = oin.ReductionParams()
+        dcmp.reduce(params)
+        dgm = dcmp.diagram(fil, include_inf_points=False)
+        return dgm
+    """
+    weighted_points = [[p[1], p[2], p[3], r^2] for (p,r) in zip(points, radii)]
+    wpasds = py"get_weighted_periodic_alpha_shape_persistence_diagram"(weighted_points, box_lower, box_upper, exact)
+    [wpasds[1], wpasds[2], wpasds[3]]
+end
+
 function debug_alpha_shape(points)
     py"""
     import oineus as oin
