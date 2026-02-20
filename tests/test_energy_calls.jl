@@ -15,6 +15,9 @@ function run_energy_call_tests()
         @testset verbose = true "Bounding Sphere Overlap" begin
             test_bounding_sphere_overlap()
         end
+        @testset verbose = true "Overlap vs Edge Penalty" begin
+            test_overlap_vs_edge_penalty()
+        end
     end
 end
 
@@ -73,6 +76,33 @@ function test_bounding_sphere_overlap()
     # Tests are_bounding_spheres_overlapping and get_bounding_radii
     # Should verify overlap detection works correctly
     @assert false "Requires Implementation."
+end
+
+function test_overlap_vs_edge_penalty()
+    # The two calculations do not perfectly match on all seeds. It is time to move away from AlphaMol.
+    Random.seed!(999)
+
+    n_points = 25
+    radius = 1.0
+    points = [rand(3) for _ in 1:n_points]
+
+    # AlphaMol overlap: each point is its own molecule
+    flat_coords = vcat(points...)
+    molecule_sizes = fill(1, n_points)
+    radii = fill(radius, n_points)
+    measures = Energies.get_geometric_measures_and_overlap_value(
+        flat_coords, molecule_sizes, radii, 1.4, 0.0, 1.0, 1.0
+    )
+    E_O_alphamol = measures[5]
+
+    # Edge penalty via alpha complex
+    edge_penalty = d -> max(0.0, 2 * radius - d)
+    _, edge_measures = Energies.point_cloud_persistence_energy_with_edge_penalty(
+        points, [0.0, 0.0, 0.0], edge_penalty
+    )
+    E_O_edges = edge_measures["E_penalty"]
+
+    @test E_O_alphamol ≈ E_O_edges
 end
 
 function existing_values_equal(d1, d2)

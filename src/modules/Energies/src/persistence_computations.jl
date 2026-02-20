@@ -13,13 +13,6 @@ function compute_total_alpha_shape_persistence(
     end
 end
 
-function hs_total_alpha_shape_persistence(x::Vector{Float64}, persistence_weights::Vector{Float64}, exact_delaunay = false)
-    points = collect(eachcol(reshape(x, (3,length(x)÷3))))
-    pdgm = get_alpha_shape_persistence_diagram(points, exact_delaunay)
-    
-    return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
-end
-
 function total_alpha_shape_persistence_and_measures(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
     centers::Vector{Matrix{Float64}},
@@ -105,4 +98,24 @@ function point_cloud_persistence_energy(
 )
     pdgm = get_alpha_shape_persistence_diagram(points, exact_delaunay)
     return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
+end
+
+function point_cloud_persistence_energy_with_edge_penalty(
+    points::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
+    edge_penalty_fn::Function,
+    exact_delaunay::Bool=false
+)
+    pdgm, edges = get_alpha_shape_persistence_diagram_and_edges(points, exact_delaunay)
+    E_topo, measures = _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
+
+    E_penalty = 0.0
+    for (i, j) in edges
+        d = sqrt(sum((points[i+1] .- points[j+1]).^2))
+        E_penalty += edge_penalty_fn(d)
+    end
+
+    measures["E_penalty"] = E_penalty
+    measures["E_T"] = E_topo
+    return E_topo + E_penalty, measures
 end
