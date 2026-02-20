@@ -42,8 +42,8 @@ function in_bounds(x::Vector{Vector{Float64}}, bounds::Float64)
     all(all(0.0 <= c <= bounds for c in point) for point in x)
 end
 
-function in_bounds_sphere(x::Vector{Vector{Float64}}, radius::Float64, center::Vector{Float64}=[0.0, 0.0, 0.0])
-    all(sum((point .- center).^2) <= radius^2 for point in x)
+function in_bounds_sphere(x::Vector{Vector{Float64}}, radius::Float64)
+    all(sum(point.^2) <= radius^2 for point in x)
 end
 
 function _prepare_args(centers::Vector{Matrix{Float64}}, radii::Vector{Vector{Float64}})

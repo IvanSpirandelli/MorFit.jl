@@ -10,11 +10,11 @@ function get_initial_point_cloud(n_points::Int, bounds::Float64)
     [rand(Uniform(0.0, bounds), 3) for _ in 1:n_points]
 end
 
-function get_initial_point_cloud_sphere(n_points::Int, radius::Float64, center::Vector{Float64}=[0.0, 0.0, 0.0])
+function get_initial_point_cloud_sphere(n_points::Int, radius::Float64)
     points = Vector{Float64}[]
     while length(points) < n_points
-        p = center .+ radius .* (2 .* rand(3) .- 1)
-        if sum((p .- center).^2) <= radius^2
+        p = radius .* (2 .* rand(3) .- 1)
+        if sum(p.^2) <= radius^2
             push!(points, p)
         end
     end
