@@ -19,49 +19,6 @@ function are_bounding_spheres_overlapping(x::Vector{Tuple{QuatRotation{Float64},
     euclidean(t_one, t_two) < r_one + r_two
 end
 
-# Use with standard RWM and 2 subunits only
-function solvation_free_energy_and_measures_with_bounding_container_check_in_bounds(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    centers::Vector{Matrix{Float64}},
-    radii::Vector{Vector{Float64}},
-    rs::Float64,
-    prefactors::AbstractVector,
-    overlap_jump::Float64,
-    overlap_slope::Float64,
-    bounds::Float64,
-    delaunay_eps::Float64,
-    single_subunit_energies::Vector{Float64},
-    single_subunit_measures::Vector{Dict{String, Any}},
-    molecule_boundary_overlap_check::Function
-    )
-    @assert length(x) == 2 "This function cannot handle more than two molecules"
-    if in_bounds(x, bounds)
-        solvation_free_energy_and_measures_with_bounding_container_check(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
-    else
-        Inf, Dict{String, Any}()
-    end
-end
-
-function solvation_free_energy_and_measures_with_bounding_container_check(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    centers::Vector{Matrix{Float64}},
-    radii::Vector{Vector{Float64}},
-    rs::Float64,
-    prefactors::AbstractVector,
-    overlap_jump::Float64,
-    overlap_slope::Float64,
-    delaunay_eps::Float64,
-    single_subunit_energies::Vector{Float64},
-    single_subunit_measures::Vector{Dict{String, Any}},
-    molecule_boundary_overlap_check::Function
-    )
-    @assert length(x) == 2 "This function cannot handle more than two molecules"
-    if !molecule_boundary_overlap_check(x)
-        return single_subunit_energies[1] + single_subunit_energies[2], Dict{String, Any}(k => single_subunit_measures[1][k] + single_subunit_measures[2][k] for k in keys(single_subunit_measures[1]))
-    end
-    solvation_free_energy_and_measures(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
-end
-
 function solvation_free_energy_and_separate_overlap_with_bounding_container_check(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
     centers::Vector{Matrix{Float64}},
@@ -95,29 +52,6 @@ function construct_overlap_graph(x::Vector{Tuple{QuatRotation{Float64}, Vector{F
         end
     end
     graph
-end
-
-function connected_component_wise_solvation_free_energy_and_measures_in_bounds(
-    last_iteration_ccs_energies_and_measures::Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}},
-    transformed_index::Int,
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    centers::Vector{Matrix{Float64}},
-    radii::Vector{Vector{Float64}},
-    rs::Float64,
-    prefactors::AbstractVector,
-    overlap_jump::Float64,
-    overlap_slope::Float64,
-    bounds::Float64,
-    delaunay_eps::Float64,
-    single_subunit_energies::Vector{Float64},
-    single_subunit_measures::Vector{Dict{String, Any}},
-    molecule_boundary_overlap_check::Function,
-    )
-    if in_bounds(x, bounds)
-        connected_component_wise_solvation_free_energy_and_measures(last_iteration_ccs_energies_and_measures, transformed_index, x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps, single_subunit_energies, single_subunit_measures, molecule_boundary_overlap_check)
-    else
-        Inf, Dict{String, Any}(), Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}}()
-    end
 end
 
 function connected_component_wise_solvation_free_energy_and_measures(
@@ -165,32 +99,4 @@ function connected_component_wise_solvation_free_energy_and_measures(
         end
     end
     f_sol, measures, ccs_energies_and_measures
-end
-
-function get_initial_connected_component_energies(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    centers::Vector{Matrix{Float64}},
-    radii::Vector{Vector{Float64}},
-    rs::Float64,
-    prefactors::AbstractVector,
-    overlap_jump::Float64,
-    overlap_slope::Float64,
-    delaunay_eps::Float64,
-    molecule_boundary_overlap_check::Function
-    )
-
-    graph = construct_overlap_graph(x, molecule_boundary_overlap_check)
-    ccs = connected_components(graph)
-    ccs_energies_and_measures = Dict{Vector{Int}, Tuple{Float64, Dict{String, Any}}}()
-
-    for cc in ccs
-        sub_state = get_sub_state(x, cc)
-        cc_centers = centers[cc]
-        cc_radii = radii[cc]
-        ccs_energies_and_measures[cc] = solvation_free_energy_and_measures(
-            sub_state, cc_centers, cc_radii,
-            rs, prefactors, overlap_jump, overlap_slope, delaunay_eps
-        )
-    end
-    ccs_energies_and_measures
 end

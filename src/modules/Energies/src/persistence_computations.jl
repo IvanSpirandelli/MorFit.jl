@@ -63,34 +63,6 @@ function _calculate_persistence_energy_and_measures(pdgm, persistence_weights::V
     return persistence_energy, persistence_dict
 end
 
-function total_weighted_alpha_shape_persistence(
-    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
-    centers::Vector{Matrix{Float64}},
-    radii::Vector{Vector{Float64}},
-    persistence_weights::Vector{Float64},
-    exact_delaunay = false
-    )
-    
-    points = Utilities.get_realization(x, centers, format=:points)
-    flat_radii = _flatten_radii(radii) 
-    
-    pdgm = get_weighted_alpha_shape_persistence_diagram(points, flat_radii, exact_delaunay)
-    
-    return _calculate_persistence_energy(pdgm, persistence_weights)
-end
-
-
-function _calculate_persistence_energy(pdgm, persistence_weights::Vector{Float64})
-    p0 = get_total_persistence(pdgm[1])
-    p1 = get_total_persistence(pdgm[2])
-    p2 = get_total_persistence(pdgm[3])
-
-    λ0, λ1, λ2 = persistence_weights
-    persistence_energy = λ0 * p0 + λ1 * p1 + λ2 * p2
-
-    return persistence_energy
-end
-
 function point_cloud_persistence_energy(
     points::Vector{Vector{Float64}},
     persistence_weights::Vector{Float64},

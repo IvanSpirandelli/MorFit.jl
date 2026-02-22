@@ -53,8 +53,7 @@ Defined in `src/modules/Energies/src/types.jl`:
 
 ### Energy Functions
 
-- `calculate_combined_energy(...)` - New additive model (recommended)
-- `calculate_combined_potential(...)` - Legacy μ-interpolation (deprecated)
+- `calculate_combined_energy(...)` - Additive model: E = θ_G·F_sol + θ_O·O + θ_T·Σ(λᵢ·Pᵢ)
 
 See `src/modules/Energies/src/combined.jl` for implementation.
 
@@ -133,29 +132,11 @@ Resume API is the same as RWM: `simulate!(sa, wall_clock_limit, target_iters, ou
 - `mor-fit-hpc` - HPC simulation runner (uses MorFit.jl)
 - `mor-fit-analysis` - Visualization and analysis notebooks
 
-## Recent Changes (2026-02-13)
+## Recent Changes (2026-02-22)
 
-- Added `SimulatedAnnealing` algorithm with cooling schedule and adaptive step size
-- SA perturbation contract: `(state, σ_t) -> new_state` (differs from RWM's `(state) -> new_state`)
-- Best-state tracking in metadata for optimization use cases
-
-## Recent Changes (2026-02-12)
-
-- Replaced `Dict{String, Vector}` output with `SimulationOutput` struct
-- Removed `add_to_output` — replaced by `record!` with auto-expanding measures
-- Added `build_input_dict` to centralize input dict assembly
-- Resume API: `simulate!(rwm, time, iters, output)` instead of passing Dict
-- Backward compatible: `to_dict`/`SimulationOutput(dict)` round-trip preserves JLD2 format
-
-## Recent Changes (2026-02-03)
-
-- New additive energy model: `E = θ_G·F_sol + θ_O·O + θ_T·T`
-- Added `types.jl` with parameter structs
-- `calculate_combined_energy` replaces μ-interpolation
-
-## Recent Changes (2026-02-02)
-
-- Consolidated 6 realization functions into single `get_realization` with format parameter
-- Consolidated 3 `add_to_output` functions into 1 generic version
-- Added timestamps to resume simulation
-- Removed unused functions with bugs
+- Removed deprecated `calculate_combined_potential` (legacy μ-interpolation) and all dead code
+- Consolidated Python interop in `alpha_shape_diagrams.jl` — single shared `_compute_persistence_diagram`
+- Extracted shared `simulate!` loop logic into `_run_rwm_loop!` / `_run_sa_loop!`
+- Removed `get_prefactors` dispatcher, virial/amped prefactor variants (dead code)
+- Removed dead `_in_bounds` wrappers from solvation and CC calculations
+- Updated `run_test_simulation.jl` to use `calculate_combined_energy` with typed params

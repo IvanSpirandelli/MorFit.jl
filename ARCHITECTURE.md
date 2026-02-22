@@ -140,10 +140,9 @@ mor-fit-hpc depends on MorFit.jl for core functionality. Key exports used:
 - `simulate!` (both fresh start and resume variants)
 
 **Energies:**
-- `get_prefactors`, `get_bounding_radii`, `get_single_subunit_energy_and_measures`
-- `solvation_free_energy_and_measures_*` functions
+- `get_wb_prefactors`, `get_bounding_radii`, `get_single_subunit_energy_and_measures`
+- `calculate_combined_energy` (additive model)
 - `connected_component_wise_solvation_free_energy_and_measures`
-- `calculate_combined_potential`
 
 **Utilities:**
 - `get_initial_state`, `perturb_single_randomly_chosen`

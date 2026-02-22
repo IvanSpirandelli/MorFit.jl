@@ -13,55 +13,52 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 ENV["PYCALL_JL_RUNTIME_PYTHON"] = Sys.which("python3")
 
 using MorFit
+using MorFit.Energies
 using JLD2
 using Rotations
 
 # Configuration
 molecule_ids = ["1a30:protein", "1a30:ligand"]
-bounds = 100.0
-rs = 1.4
-η = 0.0073
-μ = 0.5
-overlap_jump = 1000.0
-overlap_slope = 11.0
-delaunay_eps = 0.001
-temperature = 13.0
-σ_r = 0.04
-σ_t = 0.9
-persistence_weights = [0.0, 0.0, 0.0]
-exact_delaunay = false
 target_iterations = 50
 
-# Load templates
-template_centers = [MorFit.MOLECULE_DATA[mol_id].centers for mol_id in molecule_ids]
-template_radii = [MorFit.MOLECULE_DATA[mol_id].radii for mol_id in molecule_ids]
+system = MolecularSystem(
+    [MorFit.MOLECULE_DATA[mol_id].centers for mol_id in molecule_ids],
+    [MorFit.MOLECULE_DATA[mol_id].radii for mol_id in molecule_ids],
+    100.0  # bounds
+)
+sol_params = SolvationParams(1.4, 0.0073)
+ol_params = LinearOverlapParams(1000.0, 11.0)
+topo_params = TopologyParams([0.0, 0.0, 0.0])
+num_params = NumericalParams(delaunay_eps=0.001, exact_delaunay=false)
+scales = EnergyScales(θ_G=1.0, θ_O=1.0, θ_T=0.0)
+pert_params = PerturbationParams(0.04, 0.9)
+temperature = 13.0
 
-# Compute prefactors and bounding radii
-prefactors = MorFit.Energies.get_prefactors(rs, η)
-bounding_radii = MorFit.Energies.get_bounding_radii(template_centers, template_radii, rs)
-
-# Bounding overlap check
+# Precompute single-subunit values and bounding overlap check
+prefactors = MorFit.Energies.get_wb_prefactors(sol_params.rs, sol_params.η)
+bounding_radii = MorFit.Energies.get_bounding_radii(system.centers, system.radii, sol_params.rs)
+single_energies, single_measures = MorFit.Energies.get_single_subunit_energy_and_measures(
+    system.centers, system.radii, sol_params.rs, prefactors,
+    ol_params.jump, ol_params.slope, num_params.delaunay_eps
+)
+precomputed = Precomputed(bounding_radii, single_energies, single_measures)
 bol = x -> MorFit.Energies.are_bounding_spheres_overlapping(x, 1, 2, bounding_radii)
 
-# Energy function (cc_fsol - solvation only, no Python required)
-ssu_energies, ssu_measures = MorFit.Energies.get_single_subunit_energy_and_measures(
-    template_centers, template_radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps
-)
-energy = x -> MorFit.Energies.solvation_free_energy_and_measures_with_bounding_container_check_in_bounds(
-    x, template_centers, template_radii, rs, prefactors, overlap_jump, overlap_slope, bounds,
-    delaunay_eps, ssu_energies, ssu_measures, bol
+# Energy function using current additive model
+energy = x -> MorFit.Energies.calculate_combined_energy(
+    x, system, sol_params, ol_params, topo_params, num_params, scales, precomputed, bol
 )
 
 # Perturbation function
-perturbation = x -> MorFit.Utilities.perturb_single_specified(x, σ_r, σ_t; specified_index=2)
+perturbation = x -> MorFit.Utilities.perturb_single_specified(x, pert_params.σ_r, pert_params.σ_t; specified_index=2)
 
 # Initial state - place ligand away from protein to avoid overlap
 x_init = [
     (QuatRotation(1.0, 0.0, 0.0, 0.0), [0.0, 0.0, 0.0]),   # protein at origin
-    (QuatRotation(1.0, 0.0, 0.0, 0.0), [30.0, 0.0, 0.0])   # ligand displaced
+    (QuatRotation(1.0, 0.0, 0.0, 0.0), [30.0, 0.0, 0.0])    # ligand displaced
 ]
 
-# Output storage (SimulationOutput auto-captures all energy function measures)
+# Output storage
 output = MorFit.Algorithms.SimulationOutput()
 
 # Run simulation
@@ -72,23 +69,13 @@ println("Running test simulation for $target_iterations iterations...")
 MorFit.Algorithms.simulate!(rwm, deepcopy(x_init), 60.0, target_iterations, output)
 println("Done! Sampled $(length(output.E_total)) states.")
 
-# Save
-input = Dict(
-    "molecule_ids" => molecule_ids,
-    "centers" => template_centers,
-    "radii" => template_radii,
-    "rs" => rs,
-    "η" => η,
-    "μ" => μ,
-    "bounds" => bounds,
-    "overlap_jump" => overlap_jump,
-    "overlap_slope" => overlap_slope,
-    "delaunay_eps" => delaunay_eps,
-    "T" => temperature,
-    "σ_r" => σ_r,
-    "σ_t" => σ_t,
-    "prefactors" => prefactors,
-    "persistence_weights" => persistence_weights,
+# Save using build_input_dict
+saved_config = MorFit.Algorithms.build_input_dict(
+    molecule_ids=molecule_ids, system=system, sol_params=sol_params,
+    ol_params=ol_params, topo_params=topo_params, num_params=num_params,
+    scales=scales, pert_params=pert_params, perturbation="single_specified",
+    T_sim=temperature, wall_clock_limit_minutes=60.0,
+    target_iterations=target_iterations, x_init=x_init,
 )
 
 output_dir = joinpath(@__DIR__, "../../simulation-results")
@@ -96,5 +83,5 @@ mkpath(output_dir)
 output_file = joinpath(output_dir, "test.jld2")
 
 output_dict = MorFit.Algorithms.to_dict(output)
-@save output_file input output=output_dict
+@save output_file input=saved_config output=output_dict
 println("Saved to $output_file")
