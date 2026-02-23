@@ -1,11 +1,15 @@
 #=============================================================================
 # Alpha Shape Persistence Diagrams via Python (oineus + diode)
 #
-# Python functions are defined once in a single py"..." block to avoid
-# re-importing modules and duplicating the oineus pipeline.
+# Python functions are defined in _init_python_functions(), called from
+# Energies.__init__() so they are available at runtime (not just precompilation).
 =============================================================================#
 
-py"""
+const _python_initialized = Ref(false)
+
+function _init_python_functions()
+    _python_initialized[] && return
+    py"""
 import oineus as oin
 import numpy as np
 import diode
@@ -39,6 +43,8 @@ def _periodic_alpha_shape_diagram(points, box_lower, box_upper, exact):
     )
     return _compute_persistence_diagram(simplices)
 """
+    _python_initialized[] = true
+end
 
 _extract_diagrams(result) = [result[1], result[2], result[3]]
 

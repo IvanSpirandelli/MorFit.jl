@@ -17,4 +17,8 @@ module Energies
     include("solvation_free_energy.jl")
     include("connected_component_calculations.jl")
     include("combined.jl")
+
+    function __init__()
+        _init_python_functions()
+    end
 end
