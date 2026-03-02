@@ -102,3 +102,56 @@ function point_cloud_persistence_energy_with_edge_penalty(
     measures["E_T"] = E_topo
     return E_topo + E_penalty, measures
 end
+
+# ── Variance penalty ─────────────────────────────────────────────────────────
+
+"""
+    get_persistence_variance(dgm) → Float64
+
+Variance of bar lengths (death - birth) for one persistence diagram.
+Returns 0.0 for empty or single-bar diagrams.
+"""
+function get_persistence_variance(dgm)
+    length(dgm) < 2 && return 0.0
+    bars = dgm[:, 2] .- dgm[:, 1]
+    n    = length(bars)
+    μ    = sum(bars) / n
+    return sum((b - μ)^2 for b in bars) / n
+end
+
+"""
+    point_cloud_persistence_energy_with_variance(points, λ, γ, exact_delaunay)
+        → (E_topo, E_var, measures)
+
+Compute persistence energy and variance penalty from a **single** diagram call.
+
+- `E_topo = λ₀P₀ + λ₁P₁ + λ₂P₂`  (linear; squaring is left to the caller)
+- `E_var  = γ₀·Var₀ + γ₁·Var₁ + γ₂·Var₂`
+
+The caller combines them as:
+    E_total = (use_squared ? E_topo^2 : E_topo) + E_var
+
+`measures` contains P0s/P1s/P2s plus Var0/Var1/Var2/E_var.
+"""
+function point_cloud_persistence_energy_with_variance(
+    points::Vector{Vector{Float64}},
+    persistence_weights::Vector{Float64},
+    variance_weights::Vector{Float64},
+    exact_delaunay::Bool=false
+)
+    pdgm   = get_alpha_shape_persistence_diagram(points, exact_delaunay)
+    E_topo, measures = _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
+
+    v0 = get_persistence_variance(pdgm[1])
+    v1 = get_persistence_variance(pdgm[2])
+    v2 = get_persistence_variance(pdgm[3])
+    γ0, γ1, γ2 = variance_weights
+    E_var = γ0 * v0 + γ1 * v1 + γ2 * v2
+
+    measures["Var0"]  = v0
+    measures["Var1"]  = v1
+    measures["Var2"]  = v2
+    measures["E_var"] = E_var
+
+    return E_topo, E_var, measures
+end
