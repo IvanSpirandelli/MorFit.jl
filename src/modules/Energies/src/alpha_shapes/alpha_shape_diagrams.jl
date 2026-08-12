@@ -46,7 +46,8 @@ def _periodic_alpha_shape_diagram(points, box_lower, box_upper, exact):
     _python_initialized[] = true
 end
 
-_extract_diagrams(result) = [result[1], result[2], result[3]]
+# Diagrams come back as a PyObject indexed by homological dimension (0-based)
+_extract_diagrams(result) = [get(result, i) for i in 0:2]
 
 function get_alpha_shape_persistence_diagram(points, exact=false)
     _extract_diagrams(py"_alpha_shape_diagram"(points, exact))
@@ -59,9 +60,8 @@ end
 
 function get_alpha_shape_persistence_diagram_and_edges(points, exact=false)
     result = py"_alpha_shape_diagram_and_edges"(points, exact)
-    dgm = result[1]
-    edges = result[2]
-    diagrams = [dgm[1], dgm[2], dgm[3]]
+    dgm, edges = result
+    diagrams = _extract_diagrams(dgm)
     edge_tuples = [(e[1], e[2]) for e in edges]
     return diagrams, edge_tuples
 end

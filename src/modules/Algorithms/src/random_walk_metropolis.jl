@@ -29,8 +29,7 @@ function _run_rwm_loop!(energy, perturbation, β, x, E,
                         total_step_attempts::Int, wall_clock_limit_minutes::Float64,
                         target_iterations::Int, output::SimulationOutput{S}) where S
     start_time = now()
-    current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
+    while _elapsed_minutes(start_time) < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
         x_cand = perturbation(x)
         E_cand, measures = energy(x_cand)
@@ -40,7 +39,6 @@ function _run_rwm_loop!(energy, perturbation, β, x, E,
             x = x_cand
             record!(output, E, x, total_step_attempts, measures)
         end
-        current_running_time = Dates.value(now() - start_time) / 60000.0
     end
     output.total_step_attempts = total_step_attempts
     return output

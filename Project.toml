@@ -1,11 +1,10 @@
 name = "MorFit"
 uuid = "4cee0b3f-1c92-4e1f-9816-1148aad7bb1e"
 authors = ["Ivan Spirandelli <spirandelli@uni-potsdam.de>"]
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 AlphaMolWrapper_jll = "3fb590a3-637c-5b79-98b0-0e302591ed6a"
-Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -14,14 +13,26 @@ GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-PDBTools = "e29189f1-7114-4dbd-93d0-c5673a921a58"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 AlphaMolWrapper_jll = "0.6.0"
+CxxWrap = "0.12 - 0.17"
+Distances = "0.10"
+Distributions = "0.25"
+GeometryBasics = "0.4, 0.5"
+Graphs = "1"
+JLD2 = "0.4, 0.5, 0.6"
+PyCall = "1"
+Rotations = "1"
+julia = "1.7"
+
+[extras]
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Random", "Test"]

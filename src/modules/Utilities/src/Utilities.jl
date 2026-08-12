@@ -1,7 +1,5 @@
 module Utilities
-    using PyCall
     using Rotations
-    using Distances
     using Distributions
     using GeometryBasics
 

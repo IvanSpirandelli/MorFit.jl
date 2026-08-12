@@ -1,8 +1,8 @@
-# Test MorFit persistence (diode+oineus) against GUDHI
+# Validation script: MorFit persistence (diode+oineus) against GUDHI
 #
 # Usage:
 #   PYCALL_JL_RUNTIME_PYTHON=python-environments/python-tda-313/bin/python3 \
-#   julia --project=MorFit.jl MorFit.jl/tests/test_persistence_against_gudhi.jl
+#   julia --project=MorFit.jl MorFit.jl/scripts/test_persistence_against_gudhi.jl
 
 using Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))

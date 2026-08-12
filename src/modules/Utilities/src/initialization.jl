@@ -1,9 +1,12 @@
+"""Random pose: uniformly random position in `[0, bounds]³` with a random orientation."""
+random_pose(bounds::Float64) = (random_rotation(1.0), rand(Uniform(0.0, bounds), 3))
+
 function get_initial_state(n_mol::Int, bounds::Float64)
-    vcat([[(QuatRotation(exp(Rotations.RotationVecGenerator(randn(3)...))), [rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds))]) for i in 1:n_mol]...]);
+    [random_pose(bounds) for _ in 1:n_mol]
 end
 
 function initialize_inhibitor_and_target(bounds::Float64)
-   [(QuatRotation(exp(Rotations.RotationVecGenerator(randn(3)...))), [rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds)), rand(Uniform(0.0, bounds))]), (QuatRotation(exp(Rotations.RotationVecGenerator(0.0, 0.0, 0.0))), [bounds * 0.5, bounds * 0.5, bounds * 0.5])]
+    [random_pose(bounds), (one(QuatRotation), fill(bounds / 2, 3))]
 end
 
 function get_initial_point_cloud(n_points::Int, bounds::Float64)
@@ -12,7 +15,7 @@ end
 
 function get_initial_point_cloud_grid(n_points::Int, bounds::Float64)
     k = round(Int, cbrt(n_points))
-    k^3 == n_points || error("get_initial_point_cloud_grid requires n_points to be a perfect cube, got $n_points")
+    k^3 == n_points || throw(ArgumentError("get_initial_point_cloud_grid requires n_points to be a perfect cube, got $n_points"))
     spacing = bounds / k
     offset = spacing / 2
     points = Vector{Float64}[]

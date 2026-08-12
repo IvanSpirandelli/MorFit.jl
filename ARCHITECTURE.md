@@ -12,17 +12,23 @@ MorFit.jl/
 │   ├── MorFit.jl                  # Package entry point
 │   ├── modules/
 │   │   ├── Utilities/             # State handling, RMSD, initialization
-│   │   ├── Algorithms/            # Monte Carlo samplers (RWM, CC-RWM)
-│   │   └── Energies/              # Energy functions (solvation, morphometric)
+│   │   ├── Algorithms/            # Monte Carlo samplers (RWM, CC-RWM, SA)
+│   │   └── Energies/              # Energy functions (solvation, topology)
 │   └── templates/                 # Protein structure data (JLD2 binary)
 │       ├── molecule_data.jld2         # MOLECULE_DATA: centered templates
 │       └── experimental_assemblies.jld2  # EXPERIMENTAL_ASSEMBLIES: ground truth
-├── tests/
-│   ├── Tests.jl                   # Test runner
-│   ├── test_morphometric_approach.jl  # ✓ Working
-│   ├── test_energy_calls.jl           # Stubbed - needs implementation
-│   ├── test_configuration_distances.jl # ✓ Working (RMSD tests)
-│   └── test_simulation.jld2           # Test simulation data for RMSD tests
+├── test/
+│   ├── runtests.jl                # Pkg.test entry point
+│   ├── Tests.jl                   # Test module
+│   ├── test_morphometric_approach.jl   # Geometric measures + derivatives
+│   ├── test_energy_calls.jl            # Overlap + periodic alpha complex
+│   ├── test_configuration_distances.jl # RMSD tests
+│   ├── test_realizations.jl            # get_realization formats
+│   ├── test_integration.jl             # Full simulation pipeline
+│   └── test_simulation.jld2            # Test simulation data for RMSD tests
+├── scripts/
+│   ├── run_test_simulation.jl              # Minimal end-to-end example
+│   └── test_persistence_against_gudhi.jl   # Validation against GUDHI
 ├── Project.toml
 └── LICENSE (MIT)
 ```
@@ -45,8 +51,11 @@ MorFit.jl/
 ### Algorithms
 | File | Purpose |
 |------|---------|
+| `simulation_io.jl` | `SimulationOutput` container, input-dict builders |
 | `random_walk_metropolis.jl` | Standard RWM with time/iteration limits + resume |
 | `connected_component_random_walk_metropolis.jl` | RWM for n_mol > 2 |
+| `simulated_annealing.jl` | SA with cooling schedule and adaptive step size |
+| `calibrate_temperature.jl` | Initial-temperature calibration via RWM warmup |
 
 ### Energies
 | File | Purpose |
@@ -118,16 +127,15 @@ This supports both same-type assemblies (sta) and heterogeneous assemblies (ppii
 
 | Package | Purpose |
 |---------|---------|
-| `AlphaMolWrapper_jll` | Alpha shape computation |
+| `AlphaMolWrapper_jll` | Geometric measures of ball unions (AlphaMol) |
+| `CxxWrap` | C++ interop for AlphaMolWrapper_jll |
 | `GeometryBasics` | 3D geometry primitives |
 | `PyCall` | Python interop for alpha_shape_diagrams.jl |
-| `Rotations` | Rotation matrices |
-| `StaticArrays` | Performance |
+| `Rotations` | Rigid-body rotations (QuatRotation) |
 | `Distributions` | Probability distributions |
+| `Distances` | Euclidean distances |
 | `JLD2` | Binary serialization |
-| `Combinatorics` | Permutations for RMSD |
 | `Graphs` | Connected component detection |
-| `PDBTools` | PDB file handling |
 
 ---
 

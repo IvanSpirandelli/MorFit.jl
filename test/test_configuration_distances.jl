@@ -16,7 +16,7 @@ end
 Create an identity state (no rotation, no translation) for n molecules.
 """
 function identity_state(n::Int)
-    [(QuatRotation(1.0, 0.0, 0.0, 0.0), [0.0, 0.0, 0.0]) for _ in 1:n]
+    [(one(QuatRotation), [0.0, 0.0, 0.0]) for _ in 1:n]
 end
 
 """

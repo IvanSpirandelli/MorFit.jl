@@ -34,32 +34,29 @@ function total_weighted_alpha_shape_persistence_and_measures(
     persistence_weights::Vector{Float64},
     exact_delaunay = false
     )
-    
     points = Utilities.get_realization(x, centers, format=:points)
-    flat_radii = _flatten_radii(radii) 
-    
+    flat_radii = _flatten_radii(radii)
+
     pdgm = get_weighted_alpha_shape_persistence_diagram(points, flat_radii, exact_delaunay)
-    
+
     return _calculate_persistence_energy_and_measures(pdgm, persistence_weights)
 end
 
 function get_total_persistence(dgm)
-    if length(dgm) == 0
-        return 0.0
-    end
-    sum((dgm[:,2] - dgm[:,1]))
+    isempty(dgm) && return 0.0
+    sum(dgm[:,2] .- dgm[:,1])
 end
 
 function _calculate_persistence_energy_and_measures(pdgm, persistence_weights::Vector{Float64})
     p0 = get_total_persistence(pdgm[1])
     p1 = get_total_persistence(pdgm[2])
     p2 = get_total_persistence(pdgm[3])
-    
+
     λ0, λ1, λ2 = persistence_weights
     persistence_energy = λ0 * p0 + λ1 * p1 + λ2 * p2
-    
+
     persistence_dict = Dict{String, Any}("P0s" => p0, "P1s" => p1, "P2s" => p2)
-    
+
     return persistence_energy, persistence_dict
 end
 
@@ -94,7 +91,8 @@ function point_cloud_persistence_energy_with_edge_penalty(
 
     E_penalty = 0.0
     for (i, j) in edges
-        d = sqrt(sum((points[i+1] .- points[j+1]).^2))
+        # diode returns 0-indexed vertex ids; shift to Julia's 1-based indexing
+        d = euclidean(points[i+1], points[j+1])
         E_penalty += edge_penalty_fn(d)
     end
 
@@ -112,7 +110,7 @@ Variance of bar lengths (death - birth) for one persistence diagram.
 Returns 0.0 for empty or single-bar diagrams.
 """
 function get_persistence_variance(dgm)
-    length(dgm) < 2 && return 0.0
+    size(dgm, 1) < 2 && return 0.0
     bars = dgm[:, 2] .- dgm[:, 1]
     n    = length(bars)
     μ    = sum(bars) / n

@@ -5,6 +5,13 @@ using Statistics
 # Core RMSD calculations
 =============================================================================#
 
+"""
+    _find_superposition_transform(mobile, ref) -> (R, t)
+
+Kabsch algorithm: least-squares optimal rotation `R` and translation `t`
+superposing the point set `mobile` onto `ref` (reflection-corrected via the
+sign of the determinant).
+"""
 function _find_superposition_transform(mobile, ref)
     c_mob = mean(mobile); c_ref = mean(ref)
     X = hcat([p .- c_mob for p in mobile]...); Y = hcat([p .- c_ref for p in ref]...)
@@ -15,6 +22,12 @@ function _find_superposition_transform(mobile, ref)
     return R, t
 end
 
+"""
+    _calculate_driven_rmsd(driver_mob, follower_mob, driver_ref, follower_ref) -> Float64
+
+Superpose the driver point sets (Kabsch), apply the resulting transform to
+`follower_mob`, and return its RMSD against `follower_ref`.
+"""
 function _calculate_driven_rmsd(driver_mob, follower_mob, driver_ref, follower_ref)
     R, t = _find_superposition_transform(driver_mob, driver_ref)
 

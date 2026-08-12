@@ -3,3 +3,6 @@ assets/
 examples/
 *.DS_Store
 .claude
+CLAUDE.md
+potential_improvements.md
+test/test_output/

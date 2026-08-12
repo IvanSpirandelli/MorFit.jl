@@ -1,5 +1,3 @@
-using Rotations
-
 """
     get_realization(x, centers; format=:matrix)
 
@@ -33,7 +31,6 @@ function get_realization(
     centers::Vector{Matrix{Float64}};
     format::Symbol=:matrix
 )
-    # Core transformation: R * coords + t for each molecule
     matrices = [R * tc .+ t for ((R, t), tc) in zip(x, centers)]
 
     if format == :matrix

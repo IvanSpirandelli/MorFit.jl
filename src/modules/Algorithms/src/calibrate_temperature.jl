@@ -24,6 +24,7 @@ higher candidates would only exceed it further).
 # Keyword Arguments
 - `n_steps::Int=3000`: Number of RWM steps per candidate temperature
 - `target_acceptance::Float64=0.7`: Desired acceptance rate
+- `verbose::Bool=true`: Print a calibration report
 
 # Returns
 - `T_init::Float64`: Interpolated temperature for the target acceptance rate
@@ -40,7 +41,7 @@ sa = SimulatedAnnealing(energy, perturbation, schedule, T_init, 2.5)
 """
 function calibrate_T_init(
     energy, perturbation, σ_t::Float64, x_init::S, T_candidates::Vector{Float64};
-    n_steps::Int=3000, target_acceptance::Float64=0.7
+    n_steps::Int=3000, target_acceptance::Float64=0.7, verbose::Bool=true
 ) where S
     acceptance_rates = Float64[]
     probed_candidates = Float64[]
@@ -72,15 +73,16 @@ function calibrate_T_init(
         end
     end
 
-    # Log results for diagnostics
-    n_skipped = length(T_candidates) - length(probed_candidates)
-    println("Temperature calibration (σ_t=$σ_t, $n_steps steps each, $(length(probed_candidates))/$(length(T_candidates)) probed):")
-    for (T, α) in zip(probed_candidates, acceptance_rates)
-        marker = abs(α - target_acceptance) < 0.05 ? " <--" : ""
-        println("  T=$(rpad(T, 5))  α=$(round(α, digits=4))$marker")
-    end
-    if n_skipped > 0
-        println("  (skipped $n_skipped higher candidates — target α=$target_acceptance already reached)")
+    if verbose
+        n_skipped = length(T_candidates) - length(probed_candidates)
+        println("Temperature calibration (σ_t=$σ_t, $n_steps steps each, $(length(probed_candidates))/$(length(T_candidates)) probed):")
+        for (T, α) in zip(probed_candidates, acceptance_rates)
+            marker = abs(α - target_acceptance) < 0.05 ? " <--" : ""
+            println("  T=$(rpad(T, 5))  α=$(round(α, digits=4))$marker")
+        end
+        if n_skipped > 0
+            println("  (skipped $n_skipped higher candidates — target α=$target_acceptance already reached)")
+        end
     end
 
     # Interpolate to find T where α ≈ target_acceptance
@@ -91,7 +93,7 @@ function calibrate_T_init(
         if (α_lo <= target_acceptance <= α_hi) || (α_hi <= target_acceptance <= α_lo)
             t = (target_acceptance - α_lo) / (α_hi - α_lo)
             T_init = T_lo + t * (T_hi - T_lo)
-            println("  → T_init = $(round(T_init, digits=4)) (interpolated for α=$target_acceptance)")
+            verbose && println("  → T_init = $(round(T_init, digits=4)) (interpolated for α=$target_acceptance)")
             return T_init
         end
     end
@@ -99,6 +101,6 @@ function calibrate_T_init(
     # Target outside observed range — pick the closest
     _, best_idx = findmin(abs.(acceptance_rates .- target_acceptance))
     T_init = probed_candidates[best_idx]
-    println("  → T_init = $(round(T_init, digits=4)) (closest candidate, α=$(round(acceptance_rates[best_idx], digits=4)))")
+    verbose && println("  → T_init = $(round(T_init, digits=4)) (closest candidate, α=$(round(acceptance_rates[best_idx], digits=4)))")
     return T_init
 end

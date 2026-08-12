@@ -44,24 +44,20 @@ single_energies, single_measures = MorFit.Energies.get_single_subunit_energy_and
 precomputed = Precomputed(bounding_radii, single_energies, single_measures)
 bol = x -> MorFit.Energies.are_bounding_spheres_overlapping(x, 1, 2, bounding_radii)
 
-# Energy function using current additive model
 energy = x -> MorFit.Energies.calculate_combined_energy(
     x, system, sol_params, ol_params, topo_params, num_params, scales, precomputed, bol
 )
 
-# Perturbation function
 perturbation = x -> MorFit.Utilities.perturb_single_specified(x, pert_params.σ_r, pert_params.σ_t; specified_index=2)
 
 # Initial state - place ligand away from protein to avoid overlap
 x_init = [
-    (QuatRotation(1.0, 0.0, 0.0, 0.0), [0.0, 0.0, 0.0]),   # protein at origin
-    (QuatRotation(1.0, 0.0, 0.0, 0.0), [30.0, 0.0, 0.0])    # ligand displaced
+    (one(QuatRotation), [0.0, 0.0, 0.0]),   # protein at origin
+    (one(QuatRotation), [30.0, 0.0, 0.0])   # ligand displaced
 ]
 
-# Output storage
 output = MorFit.Algorithms.SimulationOutput()
 
-# Run simulation
 β = 1.0 / temperature
 rwm = MorFit.Algorithms.RandomWalkMetropolis(energy, perturbation, β)
 

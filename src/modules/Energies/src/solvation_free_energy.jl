@@ -25,6 +25,30 @@ function _format_measures_output(measures::AbstractVector, prefactors::AbstractV
     return energy, measures_dict
 end
 
+"""Realize state `x` and compute the raw geometric measures [V, A, C, X, overlap]."""
+function _geometric_measures_and_overlap(
+    x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
+    centers::Vector{Matrix{Float64}},
+    radii::Vector{Vector{Float64}},
+    rs::Float64,
+    overlap_jump::Float64,
+    overlap_slope::Float64,
+    delaunay_eps::Float64
+    )
+    n_atoms_per_mol, flat_radii = _prepare_args(centers, radii)
+    flat_realization = Utilities.get_realization(x, centers, format=:flat)
+
+    get_geometric_measures_and_overlap_value(
+        flat_realization,
+        n_atoms_per_mol,
+        flat_radii,
+        rs,
+        overlap_jump,
+        overlap_slope,
+        delaunay_eps
+    )
+end
+
 function solvation_free_energy_and_measures(
     x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}},
     centers::Vector{Matrix{Float64}},
@@ -35,20 +59,7 @@ function solvation_free_energy_and_measures(
     overlap_slope::Float64,
     delaunay_eps::Float64
     )
-    n_atoms_per_mol, flat_radii = _prepare_args(centers, radii)
-
-    flat_realization = Utilities.get_realization(x, centers, format=:flat)
-
-    measures = get_geometric_measures_and_overlap_value(
-        flat_realization,
-        n_atoms_per_mol,
-        flat_radii,
-        rs,
-        overlap_jump,
-        overlap_slope,
-        delaunay_eps
-    )
-
+    measures = _geometric_measures_and_overlap(x, centers, radii, rs, overlap_jump, overlap_slope, delaunay_eps)
     return _format_measures_output(measures, prefactors)
 end
 
@@ -62,20 +73,8 @@ function solvation_free_energy_and_overlap(
     overlap_slope::Float64,
     delaunay_eps::Float64
     )
-    n_atoms_per_mol, flat_radii = _prepare_args(centers, radii)
-
-    flat_realization = Utilities.get_realization(x, centers, format=:flat)
-
-    measures = get_geometric_measures_and_overlap_value(
-        flat_realization,
-        n_atoms_per_mol,
-        flat_radii,
-        rs,
-        overlap_jump,
-        overlap_slope,
-        delaunay_eps
-    )
+    measures = _geometric_measures_and_overlap(x, centers, radii, rs, overlap_jump, overlap_slope, delaunay_eps)
     fsol = sum(measures[1:4] .* prefactors)
-    ol = measures[5]
-    return fsol, ol
+    overlap = measures[5]
+    return fsol, overlap
 end

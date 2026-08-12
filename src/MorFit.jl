@@ -1,26 +1,55 @@
+"""
+    MorFit
+
+Molecular fitting via Monte Carlo sampling of rigid-body configurations with
+morphometric energy functions.
+
+A configuration ("state") is a `Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}`
+holding one (rotation, translation) pair per molecule. Energies combine solvation
+free energy (morphometric approach), an overlap penalty, and persistent-homology
+terms; see `MorFit.Energies`. Sampling algorithms (Random Walk Metropolis,
+Simulated Annealing) live in `MorFit.Algorithms`.
+"""
 module MorFit
+
 using JLD2, Rotations
 
-# Modules
 include("modules/Utilities/src/Utilities.jl")
 include("modules/Algorithms/src/Algorithms.jl")
 include("modules/Energies/src/Energies.jl")
 
-# Load template data from JLD2 files
 const _templates_dir = joinpath(@__DIR__, "templates")
 
-# MOLECULE_DATA: centered building blocks
-# Keys: "pdb_id:component" (e.g., "4ty7:protein", "4ty7:ligand")
-# Values: NamedTuple (centers=Matrix{Float64}, radii=Vector{Float64})
 @load joinpath(_templates_dir, "molecule_data.jld2") molecule_data
+
+"""
+    MOLECULE_DATA
+
+Centered molecular building blocks (templates).
+
+Keys are `"pdb_id:component"` strings (e.g. `"4ty7:protein"`, `"4ty7:ligand"`).
+Each value is a `NamedTuple` with:
+- `centers::Matrix{Float64}`: 3×N atom coordinates, centered at the origin
+- `radii::Vector{Float64}`: atomic radii
+
+Templates are positioned in space by applying a state's rotation and translation.
+"""
 const MOLECULE_DATA = molecule_data
 
-# EXPERIMENTAL_ASSEMBLIES: reference configurations for RMSD (REALIZED COORDINATES)
-# Keys: Vector{String} (e.g., ["4ty7:protein", "4ty7:ligand"])
-# Values: Vector of assemblies, each assembly is NamedTuple(centers=Vector{Matrix}, radii=Vector{Vector})
-#         - centers[i] is 3×N Matrix of REALIZED coordinates for molecule i (already positioned in space)
-#         - radii[i] is Vector{Float64} of atomic radii for molecule i
 @load joinpath(_templates_dir, "experimental_assemblies.jld2") experimental_assemblies
+
+"""
+    EXPERIMENTAL_ASSEMBLIES
+
+Experimentally determined reference configurations for RMSD calculations.
+
+Keys are `Vector{String}` of molecule IDs (e.g. `["4ty7:protein", "4ty7:ligand"]`).
+Each value is a `Vector` of equivalent assemblies (accounting for permutation
+symmetry); an assembly is a `NamedTuple` with:
+- `centers::Vector{Matrix{Float64}}`: one 3×N matrix of *realized* coordinates
+  per molecule (already positioned in space, unlike the centered templates)
+- `radii::Vector{Vector{Float64}}`: atomic radii per molecule
+"""
 const EXPERIMENTAL_ASSEMBLIES = experimental_assemblies
 
 #=============================================================================
@@ -56,14 +85,14 @@ function get_rmsd_to_ground_truth(
         return Inf
     end
 
-    # The RMSD calculation expects unrealized coordinates and rigid transformations, but our reference assemblies are already realized coordinates.
-    # Therefore we pass the identity stats.
+    # The RMSD calculation expects unrealized coordinates and rigid transformations,
+    # but our reference assemblies are already realized coordinates.
+    # Therefore we pass identity states.
     ref_assemblies = EXPERIMENTAL_ASSEMBLIES[molecule_ids]
-    identity_state = [(QuatRotation(1.0, 0.0, 0.0, 0.0), [0.0, 0.0, 0.0]) for _ in 1:length(molecule_ids)]
+    identity_state = [(one(QuatRotation), [0.0, 0.0, 0.0]) for _ in 1:length(molecule_ids)]
 
     min_rmsd = Inf
     for ref_assembly in ref_assemblies
-        # ref_assembly.centers are already realized coordinates
         rmsd = Utilities.get_rmsd_for_fixed_target_inhibitor_pair(
             sim_templates, ref_assembly.centers, state, identity_state
         )
@@ -73,48 +102,31 @@ function get_rmsd_to_ground_truth(
     return min_rmsd
 end
 
+_sim_templates(input) = haskey(input, "centers") ? input["centers"] : input["template_centers"]
+
 """
     get_min_rmsd(input, output)
 
 Get RMSD for the minimum energy state of a simulation.
-Accepts both Dict and SimulationOutput for `output`.
+Accepts both a saved `Dict` and a `SimulationOutput` for `output`.
 """
-function get_min_rmsd(input, output)
-    molecule_ids = Vector{String}(input["molecule_ids"])
-    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
-    min_energy_state = output["states"][argmin(output["E_total"])]
-    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
-end
-
 function get_min_rmsd(input, output::Algorithms.SimulationOutput)
     molecule_ids = Vector{String}(input["molecule_ids"])
-    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
     min_energy_state = output.states[argmin(output.E_total)]
-    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
+    get_rmsd_to_ground_truth(molecule_ids, _sim_templates(input), min_energy_state)
 end
+
+get_min_rmsd(input, output::AbstractDict) =
+    get_min_rmsd(input, Algorithms.SimulationOutput(output))
 
 """
     get_min_rmsd_cutoff(input, output, cutoff_index)
 
 Get RMSD for minimum energy state up to a given iteration cutoff.
-Accepts both Dict and SimulationOutput for `output`.
+Accepts both a saved `Dict` and a `SimulationOutput` for `output`.
 """
-function get_min_rmsd_cutoff(input, output, cutoff_index::Int)
-    molecule_ids = Vector{String}(input["molecule_ids"])
-    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
-
-    max_index = findlast(x -> x <= cutoff_index, output["αs"])
-    if isnothing(max_index)
-        return Inf
-    end
-
-    min_energy_state = output["states"][1:max_index][argmin(output["E_total"][1:max_index])]
-    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
-end
-
 function get_min_rmsd_cutoff(input, output::Algorithms.SimulationOutput, cutoff_index::Int)
     molecule_ids = Vector{String}(input["molecule_ids"])
-    sim_templates = haskey(input, "centers") ? input["centers"] : input["template_centers"]
 
     max_index = findlast(x -> x <= cutoff_index, output.αs)
     if isnothing(max_index)
@@ -122,10 +134,10 @@ function get_min_rmsd_cutoff(input, output::Algorithms.SimulationOutput, cutoff_
     end
 
     min_energy_state = output.states[1:max_index][argmin(output.E_total[1:max_index])]
-    get_rmsd_to_ground_truth(molecule_ids, sim_templates, min_energy_state)
+    get_rmsd_to_ground_truth(molecule_ids, _sim_templates(input), min_energy_state)
 end
 
-# Tests
-include("../tests/Tests.jl")
+get_min_rmsd_cutoff(input, output::AbstractDict, cutoff_index::Int) =
+    get_min_rmsd_cutoff(input, Algorithms.SimulationOutput(output), cutoff_index)
 
-end #module MorFit
+end # module MorFit

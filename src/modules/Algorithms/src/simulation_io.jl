@@ -1,9 +1,5 @@
-#=============================================================================
-# SimulationOutput: Structured output for MCMC simulations
-#
-# Replaces manual Dict{String, Vector} initialization with an auto-expanding
-# struct that captures all energy function measures without pre-initialization.
-=============================================================================#
+"""Minutes elapsed since `start_time`."""
+_elapsed_minutes(start_time::DateTime) = Dates.value(now() - start_time) / 60000.0
 
 """
     SimulationOutput{S}
@@ -51,7 +47,7 @@ const MolecularState = Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}
 """
     SimulationOutput()
 
-Create an empty SimulationOutput with molecular state type (backward compatible).
+Create an empty SimulationOutput with molecular state type.
 """
 function SimulationOutput(; track_best_only::Bool=false)
     SimulationOutput{MolecularState}(
@@ -83,7 +79,7 @@ function SimulationOutput{S}(; track_best_only::Bool=false) where S
 end
 
 """
-    SimulationOutput(d::Dict{String, Vector})
+    SimulationOutput(d::AbstractDict{String})
 
 Reconstruct a SimulationOutput from a saved Dict (e.g., loaded from JLD2).
 
@@ -93,7 +89,7 @@ Handles legacy key names:
 Float64 vectors (other than fixed fields) go to `measures`.
 Everything else goes to `metadata`.
 """
-function SimulationOutput(d::Dict{String, Vector})
+function SimulationOutput(d::AbstractDict{String})
     # Infer state type from stored data
     if haskey(d, "states") && !isempty(d["states"])
         S = eltype(d["states"])
@@ -213,9 +209,8 @@ end
 
 Build the canonical input/config dictionary for saving alongside simulation output.
 
-Centralizes the 5+ identical `saved_config = Dict(...)` blocks scattered across
-simulation scripts. The returned Dict{String, Any} is saved to JLD2 as `input`
-and used by `continue_simulation` to reconstruct the simulation setup.
+The returned Dict{String, Any} is saved to JLD2 as `input` and used to
+reconstruct the simulation setup when continuing a simulation.
 
 All parameters use duck-typing (no Energies module dependency).
 """

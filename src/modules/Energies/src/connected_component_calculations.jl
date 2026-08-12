@@ -1,7 +1,7 @@
 using Graphs
 
 function get_single_subunit_energy_and_measures(centers::Vector{Matrix{Float64}}, radii::Vector{Vector{Float64}}, rs::Float64, prefactors::AbstractVector, overlap_jump, overlap_slope, delaunay_eps)
-    combined = [solvation_free_energy_and_measures([(QuatRotation(exp(Rotations.RotationVecGenerator([0.0, 0.0, 0.0]...))), [0.0, 0.0, 0.0])], [tc], [tr], rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(centers, radii)]
+    combined = [solvation_free_energy_and_measures([(one(QuatRotation), [0.0, 0.0, 0.0])], [tc], [tr], rs, prefactors, overlap_jump, overlap_slope, delaunay_eps) for (tc,tr) in zip(centers, radii)]
     [c[1] for c in combined], [c[2] for c in combined]
 end
 
@@ -31,18 +31,18 @@ function solvation_free_energy_and_separate_overlap_with_bounding_container_chec
     single_subunit_energies::Vector{Float64},
     molecule_boundary_overlap_check::Function
     )
-    @assert length(x) == 2 "This function cannot handle more than two molecules"
+    length(x) == 2 || throw(ArgumentError("this function only handles exactly two molecules, got $(length(x))"))
     if !molecule_boundary_overlap_check(x)
         return single_subunit_energies[1] + single_subunit_energies[2], 0.0
     end
     solvation_free_energy_and_overlap(x, centers, radii, rs, prefactors, overlap_jump, overlap_slope, delaunay_eps)
 end
 
-# Stuff for 3 or more subunits
+# Connected-component decomposition for systems with three or more molecules
 get_sub_state(x, indices) = x[indices]
 
 function construct_overlap_graph(x::Vector{Tuple{QuatRotation{Float64}, Vector{Float64}}}, molecule_boundary_overlap_check)
-    n = Int(length(x))
+    n = length(x)
     graph = SimpleGraph(n)
     for i in 1:n
         for j = i+1:n
@@ -71,14 +71,14 @@ function connected_component_wise_solvation_free_energy_and_measures(
     )
     graph = construct_overlap_graph(x, molecule_boundary_overlap_check)
     ccs = connected_components(graph)
-    indexed_cc = [e for e in connected_components(graph) if transformed_index in e][1]
+    indexed_cc = ccs[findfirst(cc -> transformed_index in cc, ccs)]
     ccs_energies_and_measures = Dict{Vector{Int64}, Tuple{Float64, Dict{String, Any}}}()
 
     for cc in ccs
         if length(cc) == 1
             mol_idx = cc[1]
             ccs_energies_and_measures[cc] = single_subunit_energies[mol_idx], single_subunit_measures[mol_idx]
-        elseif !(cc in keys(last_iteration_ccs_energies_and_measures)) || cc == indexed_cc
+        elseif !haskey(last_iteration_ccs_energies_and_measures, cc) || cc == indexed_cc
             sub_state = get_sub_state(x, cc)
             cc_centers = centers[cc]
             cc_radii = radii[cc]

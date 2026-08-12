@@ -47,8 +47,7 @@ function _run_sa_loop!(alg::SimulatedAnnealing, x, E,
     σ_t_init = alg.σ_t_init
 
     start_time = now()
-    current_running_time = Dates.value(now() - start_time) / 60000.0
-    while current_running_time < wall_clock_limit_minutes && total_step_attempts < target_iterations
+    while _elapsed_minutes(start_time) < wall_clock_limit_minutes && total_step_attempts < target_iterations
         total_step_attempts += 1
         T = schedule(total_step_attempts, target_iterations)
         β = 1.0 / T
@@ -73,7 +72,6 @@ function _run_sa_loop!(alg::SimulatedAnnealing, x, E,
 
         push!(all_T, T)
         push!(all_E, E)
-        current_running_time = Dates.value(now() - start_time) / 60000.0
     end
 
     output.total_step_attempts = total_step_attempts

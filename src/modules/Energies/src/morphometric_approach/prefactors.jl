@@ -1,6 +1,13 @@
-""" Prefactors.
-    Given in equation.24 of Density functional theory for hard-sphere mixtures:
-    the White Bear version mark II.
+"""
+    get_wb_prefactors(rs, η) -> Vector{Float64}
+
+Thermodynamic prefactors `[p, σ, κ, κ̄]` scaling the four geometric measures
+(volume, surface area, mean curvature, Gaussian curvature) in the morphometric
+solvation free energy, for probe radius `rs` and packing fraction `η`.
+
+# Reference
+Hansen-Goos & Roth, "Density functional theory for hard-sphere mixtures:
+the White Bear version mark II" (2006), eq. 24.
 """
 function get_wb_prefactors(rs::Float64, η::Float64)
     [
