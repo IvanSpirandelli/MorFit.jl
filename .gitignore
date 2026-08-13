@@ -4,5 +4,6 @@ examples/
 *.DS_Store
 .claude
 CLAUDE.md
+ARCHITECTURE.md
 potential_improvements.md
 test/test_output/
